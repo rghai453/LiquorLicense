@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ChevronRight, ArrowRight, ArrowUpRight } from "lucide-react";
+import { ChevronRight, ArrowUpRight } from "lucide-react";
 import { getNewApplications, getTotalLicenseCount } from "@/db/queries";
 
 export const metadata: Metadata = {
@@ -30,20 +30,6 @@ export default async function NewApplicationsPage(): Promise<React.ReactElement>
       <p className="mt-1 text-sm text-stone-500 mb-6">
         Recently filed TABC liquor license applications in Texas
       </p>
-
-      <div className="mb-8 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4">
-        <p className="text-sm font-medium text-amber-900">
-          Sales teams: New license applications mean new businesses that need
-          supplies, insurance, POS systems, and more.
-        </p>
-        <Link
-          href="/pricing"
-          className="mt-1.5 inline-flex items-center gap-1 text-sm font-semibold text-amber-700 transition-colors hover:text-amber-900"
-        >
-          Pro: Get instant email alerts when new applications are filed
-          <ArrowRight className="size-3.5" />
-        </Link>
-      </div>
 
       <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 lg:grid-cols-3">
         {results.map((lic) => (
