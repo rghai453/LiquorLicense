@@ -1,49 +1,20 @@
-import type { InputHTMLAttributes, ReactNode } from 'react';
+import * as React from "react"
+import { Input as InputPrimitive } from "@base-ui/react/input"
 
-interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'className'> {
-  label?: string;
-  error?: string;
-  className?: string;
-}
+import { cn } from "@/lib/utils"
 
-export function Input({
-  label,
-  error,
-  id,
-  className = '',
-  ...props
-}: InputProps): ReactNode {
-  const inputId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
-
+function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
-    <div className={className}>
-      {label && (
-        <label
-          htmlFor={inputId}
-          className="mb-1 block text-sm font-medium text-gray-700"
-        >
-          {label}
-        </label>
+    <InputPrimitive
+      type={type}
+      data-slot="input"
+      className={cn(
+        "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
+        className
       )}
-      <input
-        id={inputId}
-        className={`block w-full rounded-md border px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-gray-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 ${
-          error
-            ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-            : 'border-gray-300'
-        }`}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error && inputId ? `${inputId}-error` : undefined}
-        {...props}
-      />
-      {error && (
-        <p
-          id={inputId ? `${inputId}-error` : undefined}
-          className="mt-1 text-sm text-red-600"
-        >
-          {error}
-        </p>
-      )}
-    </div>
-  );
+      {...props}
+    />
+  )
 }
+
+export { Input }

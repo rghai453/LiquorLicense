@@ -3,24 +3,29 @@ import { licenses } from "@/db/schema";
 import { sql } from "drizzle-orm";
 import type { MetadataRoute } from "next";
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://liquorscope.com";
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://barbooktx.com";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const allLicenses = await db
-    .select({ slug: licenses.slug, updatedAt: licenses.updatedAt })
-    .from(licenses);
-
-  const cities = await db
-    .select({ city: licenses.city })
-    .from(licenses)
-    .where(sql`${licenses.city} is not null AND ${licenses.city} != ''`)
-    .groupBy(licenses.city);
-
-  const counties = await db
-    .select({ county: licenses.county })
-    .from(licenses)
-    .where(sql`${licenses.county} is not null AND ${licenses.county} != ''`)
-    .groupBy(licenses.county);
+  const [allLicenses, cities, counties, zips] = await Promise.all([
+    db
+      .select({ slug: licenses.slug, updatedAt: licenses.updatedAt })
+      .from(licenses),
+    db
+      .select({ city: licenses.city })
+      .from(licenses)
+      .where(sql`${licenses.city} is not null AND ${licenses.city} != ''`)
+      .groupBy(licenses.city),
+    db
+      .select({ county: licenses.county })
+      .from(licenses)
+      .where(sql`${licenses.county} is not null AND ${licenses.county} != ''`)
+      .groupBy(licenses.county),
+    db
+      .select({ zip: licenses.zip })
+      .from(licenses)
+      .where(sql`${licenses.zip} is not null AND ${licenses.zip} != ''`)
+      .groupBy(licenses.zip),
+  ]);
 
   const staticPages: MetadataRoute.Sitemap = [
     { url: BASE_URL, lastModified: new Date(), changeFrequency: "daily", priority: 1.0 },
@@ -56,5 +61,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-  return [...staticPages, ...licensePages, ...cityPages, ...countyPages];
+  const zipPages: MetadataRoute.Sitemap = zips
+    .filter((z) => z.zip)
+    .map((z) => ({
+      url: `${BASE_URL}/zip/${z.zip}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.6,
+    }));
+
+  return [...staticPages, ...licensePages, ...cityPages, ...countyPages, ...zipPages];
 }

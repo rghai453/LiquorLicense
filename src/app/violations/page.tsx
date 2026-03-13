@@ -1,8 +1,8 @@
-import { db } from "@/db";
-import { violations, licenses } from "@/db/schema";
-import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { ChevronRight } from "lucide-react";
+import { getRecentViolations } from "@/db/queries";
+import { AdSlot } from "@/components/ads/AdSlot";
 
 export const metadata: Metadata = {
   title: "Recent Violations & Suspensions — Texas Liquor Licenses",
@@ -12,68 +12,76 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 export default async function ViolationsPage(): Promise<React.ReactElement> {
-  const results = await db
-    .select({
-      violation: violations,
-      license: {
-        businessName: licenses.businessName,
-        city: licenses.city,
-        slug: licenses.slug,
-      },
-    })
-    .from(violations)
-    .leftJoin(licenses, eq(violations.licenseId, licenses.id))
-    .orderBy(desc(violations.date))
-    .limit(50);
+  const results = await getRecentViolations();
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
-      <nav className="text-sm text-gray-500 mb-6">
-        <Link href="/" className="hover:text-amber-600">Home</Link>{" / "}
-        <span className="text-gray-900">Violations</span>
+    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+      <nav className="mb-6 flex items-center gap-1.5 text-sm text-stone-400">
+        <Link href="/" className="transition-colors hover:text-amber-600">Home</Link>
+        <ChevronRight className="size-3" />
+        <span className="font-medium text-stone-700">Violations</span>
       </nav>
 
-      <h1 className="text-3xl font-bold mb-2">Recent Violations & Suspensions</h1>
-      <p className="text-gray-700 mb-8">TABC enforcement actions against Texas liquor license holders</p>
+      <h1 className="text-3xl font-bold tracking-tight text-stone-900">
+        Recent Violations & Suspensions
+      </h1>
+      <p className="mt-1 text-sm text-stone-500 mb-6">
+        TABC enforcement actions against Texas liquor license holders
+      </p>
 
       {results.length === 0 ? (
-        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-600">
-          <p className="text-lg">No violations data available yet.</p>
-          <p className="text-sm mt-2">Violation data will be populated as we expand our TABC data pipeline.</p>
+        <div className="flex flex-col items-center justify-center rounded-xl border border-stone-200/80 bg-white py-20">
+          <p className="text-lg font-semibold text-stone-700">No violations data available yet</p>
+          <p className="mt-1 text-sm text-stone-400">
+            Violation data will be populated as we expand our TABC data pipeline.
+          </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {results.map(({ violation, license }) => (
-            <div key={violation.id} className="bg-white rounded-lg border border-gray-200 p-5">
+            <div
+              key={violation.id}
+              className="rounded-xl border border-stone-200/80 bg-white p-5 transition-colors hover:border-stone-300/80"
+            >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="font-semibold">
-                    {license?.slug ? (
-                      <Link href={`/licenses/${license.slug}`} className="text-amber-600 hover:text-amber-700">
-                        {license.businessName}
-                      </Link>
-                    ) : (
-                      <span>License #{violation.licenseNumber}</span>
-                    )}
-                  </h3>
-                  {license?.city && <p className="text-sm text-gray-600">{license.city}, TX</p>}
+                  {license?.slug ? (
+                    <Link
+                      href={`/licenses/${license.slug}`}
+                      className="text-sm font-semibold text-stone-800 transition-colors hover:text-amber-700"
+                    >
+                      {license.businessName}
+                    </Link>
+                  ) : (
+                    <span className="text-sm font-semibold text-stone-800">
+                      License #{violation.licenseNumber}
+                    </span>
+                  )}
+                  {license?.city && (
+                    <p className="mt-0.5 text-xs text-stone-400">{license.city}, TX</p>
+                  )}
                 </div>
-                <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded whitespace-nowrap">
+                <span className="inline-flex items-center rounded-md bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700 ring-1 ring-red-200/50">
                   {violation.violationType}
                 </span>
               </div>
-              {violation.description && (
-                <p className="text-sm text-gray-700 mt-2">{violation.description}</p>
+              {(violation.description || violation.date || violation.disposition || violation.penalty) && (
+                <div className="mt-3 border-t border-stone-100 pt-3">
+                  {violation.description && (
+                    <p className="text-sm text-stone-600 mb-2">{violation.description}</p>
+                  )}
+                  <div className="flex flex-wrap gap-4 text-xs text-stone-400">
+                    {violation.date && <span>Date: {violation.date}</span>}
+                    {violation.disposition && <span>Disposition: {violation.disposition}</span>}
+                    {violation.penalty && <span>Penalty: {violation.penalty}</span>}
+                  </div>
+                </div>
               )}
-              <div className="flex gap-4 text-xs text-gray-600 mt-3">
-                {violation.date && <span>Date: {violation.date}</span>}
-                {violation.disposition && <span>Disposition: {violation.disposition}</span>}
-                {violation.penalty && <span>Penalty: {violation.penalty}</span>}
-              </div>
             </div>
           ))}
         </div>
       )}
+      <AdSlot slot="violations-bottom" format="horizontal" className="mt-10" />
     </div>
   );
 }

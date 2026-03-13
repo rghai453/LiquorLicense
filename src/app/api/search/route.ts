@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/db";
 import { licenses } from "@/db/schema";
-import { ilike, or, sql } from "drizzle-orm";
+import { ilike, or } from "drizzle-orm";
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const q = req.nextUrl.searchParams.get("q");

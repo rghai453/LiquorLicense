@@ -1,8 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
 import Stripe from "stripe";
-import { db } from "@/db";
-import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2026-02-25.clover",
@@ -31,31 +28,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
-      const userId = session.metadata?.userId;
-      if (userId && session.mode === "subscription") {
-        await db
-          .update(users)
-          .set({
-            subscriptionTier: "pro",
-            stripeCustomerId: session.customer as string,
-            subscriptionId: session.subscription as string,
-            updatedAt: new Date(),
-          })
-          .where(eq(users.id, userId));
-      }
-      break;
-    }
-
-    case "customer.subscription.deleted": {
-      const subscription = event.data.object as Stripe.Subscription;
-      await db
-        .update(users)
-        .set({
-          subscriptionTier: "free",
-          subscriptionId: null,
-          updatedAt: new Date(),
-        })
-        .where(eq(users.stripeCustomerId, subscription.customer as string));
+      console.log(
+        `Payment completed: ${session.id}, customer: ${session.customer_details?.email}`
+      );
       break;
     }
 

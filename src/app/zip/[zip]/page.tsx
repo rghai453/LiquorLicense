@@ -1,8 +1,8 @@
-import { db } from "@/db";
-import { licenses } from "@/db/schema";
-import { eq, count, desc } from "drizzle-orm";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { ChevronRight, ArrowUpRight } from "lucide-react";
+import { getLicensesByZip } from "@/db/queries";
+import { AdSlot } from "@/components/ads/AdSlot";
 
 export const revalidate = 86400;
 
@@ -21,41 +21,43 @@ export async function generateMetadata({ params }: ZipPageProps): Promise<Metada
 export default async function ZipPage({ params }: ZipPageProps): Promise<React.ReactElement> {
   const { zip } = await params;
 
-  const [results, [totalResult]] = await Promise.all([
-    db.select().from(licenses).where(eq(licenses.zip, zip)).orderBy(desc(licenses.createdAt)).limit(50),
-    db.select({ count: count() }).from(licenses).where(eq(licenses.zip, zip)),
-  ]);
-
-  const total = totalResult?.count ?? 0;
-  const statusColor: Record<string, string> = {
-    active: "bg-green-100 text-green-800",
-    suspended: "bg-yellow-100 text-yellow-800",
-    revoked: "bg-red-100 text-red-800",
-    expired: "bg-gray-100 text-gray-600",
-  };
+  const { results, total } = await getLicensesByZip(zip);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <nav className="text-sm text-gray-500 mb-6">
-        <Link href="/" className="hover:text-amber-600">Home</Link>{" / "}
-        <Link href="/directory" className="hover:text-amber-600">Directory</Link>{" / "}
-        <span className="text-gray-900">ZIP {zip}</span>
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <nav className="mb-6 flex items-center gap-1.5 text-sm text-stone-400">
+        <Link href="/" className="transition-colors hover:text-amber-600">Home</Link>
+        <ChevronRight className="size-3" />
+        <Link href="/directory" className="transition-colors hover:text-amber-600">Directory</Link>
+        <ChevronRight className="size-3" />
+        <span className="font-medium text-stone-700">ZIP {zip}</span>
       </nav>
 
-      <h1 className="text-3xl font-bold mb-2">Liquor Licenses in ZIP {zip}</h1>
-      <p className="text-gray-700 mb-8">{total.toLocaleString()} verified TABC licenses</p>
+      <h1 className="text-3xl font-bold tracking-tight text-stone-900">
+        Liquor Licenses in ZIP {zip}
+      </h1>
+      <p className="mt-1 text-sm text-stone-500 mb-8">
+        {total.toLocaleString()} active licenses
+      </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <AdSlot slot="zip-top" format="horizontal" className="mb-8" />
+
+      <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 lg:grid-cols-3">
         {results.map((lic) => (
-          <Link key={lic.id} href={`/licenses/${lic.slug}`}
-            className="bg-white rounded-lg border border-gray-200 p-4 hover:border-amber-500 hover:shadow-md transition-all">
-            <div className="flex items-start justify-between mb-1">
-              <h3 className="font-semibold text-gray-900 truncate flex-1">{lic.businessName}</h3>
-              <span className={`text-xs px-2 py-0.5 rounded ml-2 ${statusColor[lic.status.toLowerCase()] || "bg-gray-100"}`}>{lic.status}</span>
+          <Link key={lic.id} href={`/licenses/${lic.slug}`} className="group">
+            <div className="h-full rounded-xl border border-stone-200/80 bg-white p-4 transition-all duration-200 hover:border-amber-300/60 hover:shadow-md hover:shadow-amber-900/5">
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm font-semibold text-stone-800 truncate flex-1 group-hover:text-amber-700">{lic.businessName}</p>
+                <ArrowUpRight className="size-3.5 shrink-0 text-stone-300 group-hover:text-amber-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+              </div>
+              <p className="mt-1.5 text-sm text-stone-500">{lic.address}</p>
+              <div className="mt-3 flex items-center justify-between">
+                <span className="inline-flex items-center rounded-md bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-600">{lic.licenseType}</span>
+                <span className="text-xs text-stone-400">
+                  {lic.city}{lic.county ? `, ${lic.county} Co.` : ""}
+                </span>
+              </div>
             </div>
-            <p className="text-sm text-gray-700">{lic.address}</p>
-            <p className="text-sm text-gray-600">{lic.city}, {lic.county} County</p>
-            <span className="inline-block mt-2 text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded">{lic.licenseType}</span>
           </Link>
         ))}
       </div>

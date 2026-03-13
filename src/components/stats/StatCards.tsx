@@ -1,42 +1,39 @@
-import type { ReactNode } from 'react';
+import type { LucideIcon } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface Stat {
   label: string;
   value: string | number;
-  change?: string;
+  icon?: LucideIcon;
 }
 
 interface StatCardsProps {
   stats: Stat[];
 }
 
-function isPositiveChange(change: string): boolean {
-  return change.startsWith('+');
-}
-
-export function StatCards({ stats }: StatCardsProps): ReactNode {
+export function StatCards({ stats }: StatCardsProps): React.ReactElement {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {stats.map((stat) => (
-        <div
-          key={stat.label}
-          className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
-        >
-          <p className="text-sm font-medium text-gray-500">{stat.label}</p>
-          <p className="mt-2 text-3xl font-semibold text-gray-900">
-            {stat.value}
-          </p>
-          {stat.change && (
-            <p
-              className={`mt-1 text-sm font-medium ${
-                isPositiveChange(stat.change) ? 'text-green-600' : 'text-red-600'
-              }`}
-            >
-              {stat.change}
-            </p>
-          )}
-        </div>
-      ))}
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {stats.map((stat) => {
+        const Icon = stat.icon;
+        return (
+          <Card key={stat.label} size="sm">
+            <CardContent className="flex items-start gap-3">
+              {Icon && (
+                <Icon className="size-5 text-muted-foreground shrink-0 mt-0.5" />
+              )}
+              <div>
+                <p className="text-2xl font-semibold leading-tight">
+                  {stat.value}
+                </p>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {stat.label}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }

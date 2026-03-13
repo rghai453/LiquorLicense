@@ -1,8 +1,11 @@
-import { db } from "@/db";
-import { licenses } from "@/db/schema";
-import { sql, desc, eq, ilike, and, count } from "drizzle-orm";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { buttonVariants } from "@/components/ui/button-variants";
+import { cn } from "@/lib/utils";
+import { DirectoryFilters } from "@/components/directory/DirectoryFilters";
+import { FileX2, ArrowUpRight } from "lucide-react";
+import { getDirectoryResults } from "@/db/queries";
+import { AdSlot } from "@/components/ads/AdSlot";
 
 export const revalidate = 3600;
 
@@ -28,7 +31,7 @@ export async function generateMetadata({
 
   return {
     title: parts.join(" — "),
-    description: `Browse ${parts.join(" ")}. Search verified TABC license data with LiquorScope.`,
+    description: `Browse ${parts.join(" ")}. Search verified TABC license data with BarBook Texas.`,
   };
 }
 
@@ -41,39 +44,18 @@ export default async function DirectoryPage({
   const page = Math.max(1, parseInt(params.page || "1", 10));
   const offset = (page - 1) * PAGE_SIZE;
 
-  const conditions = [];
-  if (params.q) {
-    conditions.push(
-      sql`(${ilike(licenses.businessName, `%${params.q}%`)} OR ${ilike(licenses.dba, `%${params.q}%`)})`
-    );
-  }
-  if (params.type) {
-    conditions.push(ilike(licenses.licenseType, `%${params.type}%`));
-  }
-  if (params.city) {
-    conditions.push(ilike(licenses.city, params.city));
-  }
-  if (params.county) {
-    conditions.push(ilike(licenses.county, params.county));
-  }
-  if (params.status) {
-    conditions.push(ilike(licenses.status, params.status));
-  }
+  const { results, total } = await getDirectoryResults(
+    {
+      q: params.q,
+      type: params.type,
+      city: params.city,
+      county: params.county,
+      status: params.status,
+    },
+    PAGE_SIZE,
+    offset
+  );
 
-  const where = conditions.length > 0 ? and(...conditions) : undefined;
-
-  const [results, [totalResult]] = await Promise.all([
-    db
-      .select()
-      .from(licenses)
-      .where(where)
-      .orderBy(desc(licenses.createdAt))
-      .limit(PAGE_SIZE)
-      .offset(offset),
-    db.select({ count: count() }).from(licenses).where(where),
-  ]);
-
-  const total = totalResult?.count ?? 0;
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   function buildUrl(newParams: Record<string, string>): string {
@@ -85,174 +67,126 @@ export default async function DirectoryPage({
     return `/directory?${sp.toString()}`;
   }
 
-  const statusColor: Record<string, string> = {
-    active: "bg-green-100 text-green-800",
-    suspended: "bg-yellow-100 text-yellow-800",
-    revoked: "bg-red-100 text-red-800",
-    expired: "bg-gray-100 text-gray-600",
-  };
-
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* Header */}
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">Texas Liquor License Directory</h1>
-        <p className="text-gray-700 mt-1">
-          {total.toLocaleString()} licenses found
+        <h1 className="text-3xl font-bold tracking-tight text-stone-900">
+          Texas Liquor License Directory
+        </h1>
+        <p className="mt-1 text-sm text-stone-500">
+          {total.toLocaleString()} active licenses
         </p>
       </div>
 
-      {/* Search & Filters */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
-        <form method="GET" action="/directory" className="flex flex-wrap gap-3">
-          <input
-            type="text"
-            name="q"
-            defaultValue={params.q}
-            placeholder="Search by business name..."
-            className="flex-1 min-w-[200px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
-          />
-          <select
-            name="type"
-            defaultValue={params.type}
-            className="px-4 py-2 border border-gray-300 rounded-lg bg-white"
-          >
-            <option value="">All Types</option>
-            <option value="Mixed Beverage">Mixed Beverage</option>
-            <option value="Beer & Wine">Beer & Wine</option>
-            <option value="Package Store">Package Store</option>
-            <option value="Brewpub">Brewpub</option>
-            <option value="Manufacturer">Manufacturer</option>
-            <option value="Wholesaler">Wholesaler</option>
-          </select>
-          <select
-            name="status"
-            defaultValue={params.status}
-            className="px-4 py-2 border border-gray-300 rounded-lg bg-white"
-          >
-            <option value="">All Statuses</option>
-            <option value="active">Active</option>
-            <option value="suspended">Suspended</option>
-            <option value="expired">Expired</option>
-            <option value="revoked">Revoked</option>
-          </select>
-          <input
-            type="text"
-            name="city"
-            defaultValue={params.city}
-            placeholder="City"
-            className="w-32 px-4 py-2 border border-gray-300 rounded-lg"
-          />
-          <button
-            type="submit"
-            className="px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg transition-colors"
-          >
-            Search
-          </button>
-          {(params.q || params.type || params.city || params.status) && (
-            <Link
-              href="/directory"
-              className="px-4 py-2 text-gray-700 hover:text-gray-900"
-            >
-              Clear
-            </Link>
-          )}
-        </form>
+      <div className="mb-8 rounded-xl border border-stone-200/80 bg-white p-4">
+        <DirectoryFilters />
       </div>
 
-      {/* Results Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        {results.map((lic) => (
+      <AdSlot slot="directory-top" format="horizontal" className="mb-8" />
+
+      {results.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-stone-200/80 bg-white py-20">
+          <FileX2 className="size-10 text-stone-300 mb-4" />
+          <p className="text-lg font-semibold text-stone-700">No licenses found</p>
+          <p className="mt-1 text-sm text-stone-400">
+            Try adjusting your search or filters.
+          </p>
           <Link
-            key={lic.id}
-            href={`/licenses/${lic.slug}`}
-            className="bg-white rounded-lg border border-gray-200 p-4 hover:border-amber-500 hover:shadow-md transition-all"
+            href="/directory"
+            className="mt-5 inline-flex items-center rounded-lg border border-stone-200 px-4 py-2 text-sm font-medium text-stone-600 transition-colors hover:border-stone-300 hover:bg-stone-50"
           >
-            <div className="flex items-start justify-between mb-2">
-              <h3 className="font-semibold text-gray-900 truncate flex-1">
-                {lic.businessName}
-              </h3>
-              <span
-                className={`text-xs px-2 py-0.5 rounded ml-2 whitespace-nowrap ${statusColor[lic.status.toLowerCase()] || "bg-gray-100 text-gray-600"}`}
-              >
-                {lic.status}
-              </span>
-            </div>
-            {lic.dba && lic.dba !== lic.businessName && (
-              <p className="text-sm text-gray-600 truncate">
-                DBA: {lic.dba}
-              </p>
-            )}
-            <p className="text-sm text-gray-700 mt-1">{lic.address}</p>
-            <p className="text-sm text-gray-600">
-              {[lic.city, lic.county ? `${lic.county} County` : null]
-                .filter(Boolean)
-                .join(", ")}
-            </p>
-            <div className="mt-3 flex items-center gap-2">
-              <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded">
-                {lic.licenseType}
-              </span>
-              <span className="text-xs text-gray-400">#{lic.licenseNumber}</span>
-            </div>
-          </Link>
-        ))}
-      </div>
-
-      {results.length === 0 && (
-        <div className="text-center py-12 text-gray-600">
-          <p className="text-lg">No licenses found matching your criteria.</p>
-          <Link href="/directory" className="text-amber-600 hover:text-amber-700 mt-2 inline-block">
             Clear filters
           </Link>
         </div>
-      )}
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 mb-10">
+            {results.map((lic) => {
+              const locationParts = [
+                lic.city,
+                lic.county ? `${lic.county} Co.` : null,
+              ]
+                .filter(Boolean)
+                .join(", ");
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          {page > 1 && (
-            <Link
-              href={buildUrl({ page: String(page - 1) })}
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              Previous
-            </Link>
+              return (
+                <Link key={lic.id} href={`/licenses/${lic.slug}`} className="group">
+                  <div className="relative h-full overflow-hidden rounded-xl border border-stone-200/80 bg-white p-4 transition-all duration-200 hover:border-amber-300/60 hover:shadow-md hover:shadow-amber-900/5">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-semibold text-sm leading-snug text-stone-800 truncate flex-1 transition-colors group-hover:text-amber-700">
+                        {lic.businessName}
+                      </p>
+                      <ArrowUpRight className="size-3.5 shrink-0 text-stone-300 transition-all group-hover:text-amber-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                    </div>
+                    {lic.dba && lic.dba !== lic.businessName && (
+                      <p className="mt-1 text-xs text-stone-400 truncate">
+                        DBA: {lic.dba}
+                      </p>
+                    )}
+                    <p className="mt-1.5 text-sm text-stone-500">{lic.address}</p>
+                    <div className="mt-3 flex items-center justify-between gap-2">
+                      <span className="inline-flex items-center rounded-md bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-600">
+                        {lic.licenseType}
+                      </span>
+                      {locationParts && (
+                        <span className="text-xs text-stone-400">{locationParts}</span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+
+          {totalPages > 1 && (
+            <nav aria-label="Pagination" className="flex items-center justify-center gap-1">
+              {page > 1 && (
+                <Link
+                  href={buildUrl({ page: String(page - 1) })}
+                  className="inline-flex h-9 items-center rounded-lg border border-stone-200 bg-white px-3 text-sm font-medium text-stone-600 transition-colors hover:border-stone-300 hover:bg-stone-50"
+                >
+                  Previous
+                </Link>
+              )}
+              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                let pageNum: number;
+                if (totalPages <= 7) {
+                  pageNum = i + 1;
+                } else if (page <= 4) {
+                  pageNum = i + 1;
+                } else if (page >= totalPages - 3) {
+                  pageNum = totalPages - 6 + i;
+                } else {
+                  pageNum = page - 3 + i;
+                }
+                const isActive = pageNum === page;
+                return (
+                  <Link
+                    key={pageNum}
+                    href={buildUrl({ page: String(pageNum) })}
+                    className={cn(
+                      "inline-flex size-9 items-center justify-center rounded-lg text-sm font-medium transition-colors",
+                      isActive
+                        ? "bg-stone-900 text-white"
+                        : "border border-stone-200 bg-white text-stone-600 hover:border-stone-300 hover:bg-stone-50"
+                    )}
+                    aria-current={isActive ? "page" : undefined}
+                  >
+                    {pageNum}
+                  </Link>
+                );
+              })}
+              {page < totalPages && (
+                <Link
+                  href={buildUrl({ page: String(page + 1) })}
+                  className="inline-flex h-9 items-center rounded-lg border border-stone-200 bg-white px-3 text-sm font-medium text-stone-600 transition-colors hover:border-stone-300 hover:bg-stone-50"
+                >
+                  Next
+                </Link>
+              )}
+            </nav>
           )}
-          {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-            let pageNum: number;
-            if (totalPages <= 7) {
-              pageNum = i + 1;
-            } else if (page <= 4) {
-              pageNum = i + 1;
-            } else if (page >= totalPages - 3) {
-              pageNum = totalPages - 6 + i;
-            } else {
-              pageNum = page - 3 + i;
-            }
-            return (
-              <Link
-                key={pageNum}
-                href={buildUrl({ page: String(pageNum) })}
-                className={`px-4 py-2 rounded-lg ${
-                  pageNum === page
-                    ? "bg-amber-600 text-white"
-                    : "border border-gray-300 hover:bg-gray-50"
-                }`}
-              >
-                {pageNum}
-              </Link>
-            );
-          })}
-          {page < totalPages && (
-            <Link
-              href={buildUrl({ page: String(page + 1) })}
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              Next
-            </Link>
-          )}
-        </div>
+        </>
       )}
     </div>
   );

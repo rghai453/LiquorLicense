@@ -1,9 +1,10 @@
-import { db } from "@/db";
-import { licenses } from "@/db/schema";
-import { sql, ilike, count, desc } from "drizzle-orm";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { StatCards } from "@/components/stats/StatCards";
+import { ChevronRight, ArrowUpRight } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button-variants";
+import { cn } from "@/lib/utils";
+import { getLicensesByCity } from "@/db/queries";
+import { AdSlot } from "@/components/ads/AdSlot";
 
 export const revalidate = 86400;
 
@@ -28,93 +29,68 @@ export default async function CityPage({
   const { city } = await params;
   const cityName = decodeURIComponent(city).replace(/\b\w/g, (c) => c.toUpperCase());
 
-  const [results, [totalResult], typeBreakdown] = await Promise.all([
-    db
-      .select()
-      .from(licenses)
-      .where(ilike(licenses.city, cityName))
-      .orderBy(desc(licenses.createdAt))
-      .limit(24),
-    db
-      .select({ count: count() })
-      .from(licenses)
-      .where(ilike(licenses.city, cityName)),
-    db
-      .select({ type: licenses.licenseType, count: count() })
-      .from(licenses)
-      .where(ilike(licenses.city, cityName))
-      .groupBy(licenses.licenseType)
-      .orderBy(desc(count())),
-  ]);
-
-  const total = totalResult?.count ?? 0;
-  const statusColor: Record<string, string> = {
-    active: "bg-green-100 text-green-800",
-    suspended: "bg-yellow-100 text-yellow-800",
-    revoked: "bg-red-100 text-red-800",
-    expired: "bg-gray-100 text-gray-600",
-  };
+  const { results, total, typeBreakdown } = await getLicensesByCity(cityName);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <nav className="text-sm text-gray-500 mb-6">
-        <Link href="/" className="hover:text-amber-600">Home</Link>
-        {" / "}
-        <Link href="/directory" className="hover:text-amber-600">Directory</Link>
-        {" / "}
-        <span className="text-gray-900">{cityName}</span>
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <nav className="mb-6 flex items-center gap-1.5 text-sm text-stone-400">
+        <Link href="/" className="transition-colors hover:text-amber-600">Home</Link>
+        <ChevronRight className="size-3" />
+        <Link href="/directory" className="transition-colors hover:text-amber-600">Directory</Link>
+        <ChevronRight className="size-3" />
+        <span className="font-medium text-stone-700">{cityName}</span>
       </nav>
 
-      <h1 className="text-3xl font-bold mb-2">
+      <h1 className="text-3xl font-bold tracking-tight text-stone-900">
         Liquor Licenses in {cityName}, TX
       </h1>
-      <p className="text-gray-700 mb-6">
-        {total.toLocaleString()} verified TABC licenses
+      <p className="mt-1 text-sm text-stone-500 mb-8">
+        {total.toLocaleString()} active licenses
       </p>
 
-      <StatCards
-        stats={[
-          { label: "Total Licenses", value: total.toLocaleString() },
-          { label: "License Types", value: typeBreakdown.length.toString() },
-        ]}
-      />
+      <div className="mb-8 grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-stone-200/80 ring-1 ring-stone-200 lg:grid-cols-2">
+        <div className="bg-white px-5 py-4">
+          <p className="text-[11px] font-medium uppercase tracking-wider text-stone-400">Total Licenses</p>
+          <p className="text-2xl font-bold tabular-nums text-stone-900">{total.toLocaleString()}</p>
+        </div>
+        <div className="bg-white px-5 py-4">
+          <p className="text-[11px] font-medium uppercase tracking-wider text-stone-400">License Types</p>
+          <p className="text-2xl font-bold tabular-nums text-stone-900">{typeBreakdown.length}</p>
+        </div>
+      </div>
 
-      {/* Type Breakdown */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 my-6">
-        <h2 className="text-xl font-bold mb-4">License Types in {cityName}</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+      <div className="mb-10">
+        <h2 className="text-lg font-semibold text-stone-900 mb-4">License Types in {cityName}</h2>
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
           {typeBreakdown.map((t) => (
             <Link
               key={t.type}
               href={`/directory?type=${encodeURIComponent(t.type)}&city=${encodeURIComponent(cityName)}`}
-              className="flex justify-between items-center p-3 rounded-lg border border-gray-200 hover:border-amber-500 transition-colors"
+              className="group flex items-center justify-between rounded-xl border border-stone-200/80 bg-white px-4 py-3 transition-all hover:border-amber-300/60 hover:shadow-sm"
             >
-              <span className="font-medium text-sm">{t.type}</span>
-              <span className="text-sm text-gray-600">{t.count}</span>
+              <span className="text-sm font-medium text-stone-700 group-hover:text-amber-700">{t.type}</span>
+              <span className="text-xs tabular-nums text-stone-400">{t.count}</span>
             </Link>
           ))}
         </div>
       </div>
 
-      {/* Listings */}
-      <h2 className="text-xl font-bold mb-4">Establishments</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+      <AdSlot slot="city-mid" format="horizontal" className="mb-10" />
+
+      <h2 className="text-lg font-semibold text-stone-900 mb-4">Establishments</h2>
+      <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 lg:grid-cols-3 mb-10">
         {results.map((lic) => (
-          <Link
-            key={lic.id}
-            href={`/licenses/${lic.slug}`}
-            className="bg-white rounded-lg border border-gray-200 p-4 hover:border-amber-500 hover:shadow-md transition-all"
-          >
-            <div className="flex items-start justify-between mb-1">
-              <h3 className="font-semibold text-gray-900 truncate flex-1">{lic.businessName}</h3>
-              <span className={`text-xs px-2 py-0.5 rounded ml-2 ${statusColor[lic.status.toLowerCase()] || "bg-gray-100"}`}>
-                {lic.status}
-              </span>
+          <Link key={lic.id} href={`/licenses/${lic.slug}`} className="group">
+            <div className="h-full rounded-xl border border-stone-200/80 bg-white p-4 transition-all duration-200 hover:border-amber-300/60 hover:shadow-md hover:shadow-amber-900/5">
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm font-semibold text-stone-800 truncate flex-1 group-hover:text-amber-700">{lic.businessName}</p>
+                <ArrowUpRight className="size-3.5 shrink-0 text-stone-300 group-hover:text-amber-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+              </div>
+              <p className="mt-1.5 text-sm text-stone-500">{lic.address}</p>
+              <div className="mt-3">
+                <span className="inline-flex items-center rounded-md bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-600">{lic.licenseType}</span>
+              </div>
             </div>
-            <p className="text-sm text-gray-700">{lic.address}</p>
-            <span className="inline-block mt-2 text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded">
-              {lic.licenseType}
-            </span>
           </Link>
         ))}
       </div>
@@ -123,12 +99,33 @@ export default async function CityPage({
         <div className="text-center">
           <Link
             href={`/directory?city=${encodeURIComponent(cityName)}`}
-            className="px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg transition-colors"
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-stone-900 px-6 text-sm font-medium text-white transition-colors hover:bg-stone-800"
           >
-            View All {total.toLocaleString()} Licenses in {cityName}
+            View All {total.toLocaleString()} Licenses
           </Link>
         </div>
       )}
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            name: `Liquor Licenses in ${cityName}, TX`,
+            description: `Browse ${total} active liquor licenses in ${cityName}, Texas.`,
+            url: `${process.env.NEXT_PUBLIC_APP_URL || "https://barbooktx.com"}/cities/${encodeURIComponent(city)}`,
+            about: {
+              "@type": "City",
+              name: cityName,
+              containedInPlace: {
+                "@type": "State",
+                name: "Texas",
+              },
+            },
+          }),
+        }}
+      />
     </div>
   );
 }

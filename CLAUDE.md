@@ -2,32 +2,34 @@
 
 ## What This Is
 Texas Liquor License Intelligence platform built on verified TABC public data.
-Follows the Zabalist (zabalist.com) model: free browse → Pro $29/mo → data list sales.
+Free public pages for Google long-tail traffic, monetized via display ads (AdSense/Mediavine) and one-time CSV data list purchases via Stripe. No accounts, no subscriptions.
 
 ## Tech Stack
 - Next.js 16 (App Router), TypeScript, Tailwind CSS, pnpm
 - Neon (serverless PostgreSQL) via Drizzle ORM + @neondatabase/serverless
-- Neon Auth (auth is handled by Neon — do NOT set up separate auth)
-- Stripe for billing (Pro subscription + one-time data list purchases)
-- Resend + React Email for transactional email
+- Stripe for one-time CSV data list purchases
+- AdSense for display ad revenue (Mediavine at 50K+ sessions)
 - Zod + drizzle-zod for validation
-- Upstash Redis for rate limiting
 - Papaparse for CSV export
 - Deployed on Railway
+
+## Revenue Model
+- **Display ads**: AdSense on all content pages (max 3 units/page, no ads above fold)
+- **Data lists**: One-time Stripe purchases for CSV downloads (no auth required)
 
 ## Key Conventions
 - All pages use server components by default. Use 'use client' only when necessary.
 - URL-based pagination and filtering (not client-side state) for SEO.
 - Every public page must have generateMetadata() for SEO.
 - Every entity detail page must include JSON-LD structured data.
-- Contact info is blurred for free users, revealed for Pro subscribers.
+- All content is free and public — no auth, no gating.
 - Data pipeline scripts live in /scripts and run via GitHub Actions cron.
 - DB schema defined in src/db/schema.ts using Drizzle table builders.
 
 ## Environment Variables Required
-DATABASE_URL, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_PRO_MONTHLY,
-RESEND_API_KEY, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, NEXT_PUBLIC_APP_URL,
-UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN
+DATABASE_URL, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET,
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, NEXT_PUBLIC_APP_URL,
+NEXT_PUBLIC_ADSENSE_PUBLISHER_ID (optional)
 
 ## Common Tasks
 - Run data sync: `pnpm tsx scripts/ingest/fetch-licenses.ts`

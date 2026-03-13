@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-const BRAND = "LiquorScope";
+const BRAND = "BarBook Texas";
 const TAGLINE = "Texas Liquor License Intelligence";
 const BASE_DESCRIPTION =
   "Search, monitor, and analyze Texas liquor licenses, violations, and revenue data.";

@@ -1,66 +1,43 @@
-import { NextResponse, type NextRequest } from "next/server";
-import { db } from "@/db";
-import { licenses } from "@/db/schema";
-import { ilike, and, sql } from "drizzle-orm";
+import { type NextRequest } from "next/server";
 import Papa from "papaparse";
+import { getExportData } from "@/db/queries";
 
-export async function POST(req: NextRequest): Promise<NextResponse> {
-  // TODO: Add auth check for Pro tier
-  try {
-    const body = await req.json();
-    const { type, city, county, status } = body as {
-      type?: string;
-      city?: string;
-      county?: string;
-      status?: string;
-    };
+export async function POST(req: NextRequest): Promise<Response> {
+  const { searchParams } = new URL(req.url);
+  const filters = {
+    q: searchParams.get("q") || undefined,
+    type: searchParams.get("type") || undefined,
+    city: searchParams.get("city") || undefined,
+    county: searchParams.get("county") || undefined,
+    status: searchParams.get("status") || undefined,
+  };
 
-    const conditions = [];
-    if (type) conditions.push(ilike(licenses.licenseType, `%${type}%`));
-    if (city) conditions.push(ilike(licenses.city, city));
-    if (county) conditions.push(ilike(licenses.county, county));
-    if (status) conditions.push(ilike(licenses.status, status));
+  const data = await getExportData(filters);
 
-    const where = conditions.length > 0 ? and(...conditions) : undefined;
+  const rows = data.map((license) => ({
+    license_number: license.licenseNumber,
+    business_name: license.businessName,
+    dba: license.dba ?? "",
+    license_type: license.licenseType,
+    status: license.status,
+    address: license.address ?? "",
+    city: license.city ?? "",
+    county: license.county ?? "",
+    zip: license.zip ?? "",
+    phone: license.phone ?? "",
+    email: license.email ?? "",
+    owner: license.ownerName ?? "",
+    issue_date: license.issueDate ?? "",
+    expiration_date: license.expirationDate ?? "",
+  }));
 
-    const results = await db
-      .select({
-        licenseNumber: licenses.licenseNumber,
-        businessName: licenses.businessName,
-        dba: licenses.dba,
-        licenseType: licenses.licenseType,
-        status: licenses.status,
-        address: licenses.address,
-        city: licenses.city,
-        county: licenses.county,
-        zip: licenses.zip,
-        ownerName: licenses.ownerName,
-        issueDate: licenses.issueDate,
-        expirationDate: licenses.expirationDate,
-      })
-      .from(licenses)
-      .where(where)
-      .limit(10000);
+  const csv = Papa.unparse(rows);
+  const filename = `barbooktx-export-${new Date().toISOString().slice(0, 10)}.csv`;
 
-    const csv = Papa.unparse(results);
-    const filename = [
-      "liquorscope",
-      type,
-      city,
-      county,
-      new Date().toISOString().slice(0, 10),
-    ]
-      .filter(Boolean)
-      .join("-");
-
-    return new NextResponse(csv, {
-      headers: {
-        "Content-Type": "text/csv",
-        "Content-Disposition": `attachment; filename="${filename}.csv"`,
-      },
-    });
-  } catch (error) {
-    console.error("Export error:", error);
-    return NextResponse.json({ error: "Export failed" }, { status: 500 });
-  }
+  return new Response(csv, {
+    headers: {
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+    },
+  });
 }

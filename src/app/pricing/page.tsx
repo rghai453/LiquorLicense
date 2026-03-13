@@ -1,208 +1,218 @@
-import Link from "next/link";
 import type { Metadata } from "next";
+import { Check, CheckCircle, FileSpreadsheet } from "lucide-react";
+import { CheckoutButton } from "@/components/billing/CheckoutButton";
+import { DownloadTrigger } from "@/components/billing/DownloadTrigger";
+import { stripe } from "@/lib/stripe";
 
 export const metadata: Metadata = {
-  title: "Pricing — LiquorScope",
+  title: "Data Lists — BarBook Texas",
   description:
-    "Upgrade to LiquorScope Pro for unlimited contact reveals, revenue data, email alerts, saved searches, and CSV exports. Starting at $29/mo.",
+    "Download verified Texas liquor license datasets as CSV. Active bar licenses, new applications, full state database, and more.",
 };
 
-const FREE_FEATURES = [
-  "Browse all 120,000+ licenses",
-  "View establishment details",
-  "Search & filter directory",
-  "City, county, ZIP pages",
-  "Violation history",
+interface PricingPageProps {
+  searchParams: Promise<{ success?: string; session_id?: string }>;
+}
+
+const DATA_LISTS = [
+  {
+    name: "New Applications This Month",
+    desc: "License applications filed in the last 30 days",
+    price: "$49",
+    priceId: process.env.STRIPE_PRICE_NEW_APPLICATIONS!,
+    records: "500+",
+    features: [
+      "All new applications filed this month",
+      "Business name, address, license type",
+      "Owner information",
+      "Application date",
+    ],
+  },
+  {
+    name: "All Active Bar Licenses",
+    desc: "Every active bar license in Texas with full details",
+    price: "$99",
+    priceId: process.env.STRIPE_PRICE_ACTIVE_BARS!,
+    records: "15,000+",
+    popular: true,
+    features: [
+      "Every active bar license in TX",
+      "Full contact details",
+      "Owner & DBA info",
+      "Issue & expiration dates",
+    ],
+  },
+  {
+    name: "Full State License Database",
+    desc: "Complete license database with all fields",
+    price: "$499",
+    priceId: process.env.STRIPE_PRICE_FULL_DATABASE!,
+    records: "120,000+",
+    features: [
+      "All 120,000+ license records",
+      "Every license type included",
+      "All available fields & metadata",
+      "Revenue data where available",
+    ],
+  },
 ];
 
-const PRO_FEATURES = [
-  "Everything in Free",
-  "Unlimited contact info reveals",
-  "Monthly revenue data access",
-  "Saved searches",
-  "Email alerts (daily/weekly)",
-  "CSV data exports",
-  "Statewide coverage",
-  "Priority support",
+const FAQS = [
+  {
+    q: "Where does the data come from?",
+    a: "All data is sourced from the Texas Alcoholic Beverage Commission (TABC) and the Texas Comptroller's Mixed Beverage Gross Receipts reports. It's 100% verified public record data.",
+  },
+  {
+    q: "How often is the data updated?",
+    a: "Our data pipeline syncs with TABC daily. Revenue data is published monthly by the Texas Comptroller. Data lists reflect the most recent sync.",
+  },
+  {
+    q: "What format are the data lists?",
+    a: "All data lists are delivered as CSV files that open in Excel, Google Sheets, or any data tool.",
+  },
+  {
+    q: "Can I get a refund?",
+    a: "Since data lists are delivered instantly as digital downloads, we don't offer refunds. Contact us if you have any issues with your purchase.",
+  },
 ];
 
-export default function PricingPage(): React.ReactElement {
+export default async function PricingPage({
+  searchParams,
+}: PricingPageProps): Promise<React.ReactElement> {
+  const params = await searchParams;
+  const showSuccess = params.success === "true";
+
+  let listSlug: string | null = null;
+  if (showSuccess && params.session_id) {
+    try {
+      const session = await stripe.checkout.sessions.retrieve(params.session_id);
+      if (session.payment_status === "paid") {
+        listSlug = session.metadata?.list_slug ?? null;
+      }
+    } catch {
+      // Invalid session — just show success without download
+    }
+  }
+
   return (
-    <div className="max-w-5xl mx-auto px-4 py-16">
+    <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6">
+      {showSuccess && (
+        <div className="mb-8 flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-5 py-4">
+          <CheckCircle className="size-5 shrink-0 text-green-600" />
+          <div>
+            <p className="text-sm font-semibold text-green-900">
+              Payment successful — your download should start automatically.
+            </p>
+            <p className="text-sm text-green-700">
+              If it didn&apos;t,{" "}
+              {listSlug && params.session_id ? (
+                <a
+                  href={`/api/data-lists/${listSlug}/download?session_id=${params.session_id}`}
+                  className="font-semibold underline"
+                >
+                  click here to download
+                </a>
+              ) : (
+                "contact data@barbooktx.com"
+              )}
+            </p>
+          </div>
+          {listSlug && params.session_id && (
+            <DownloadTrigger sessionId={params.session_id} listSlug={listSlug} />
+          )}
+        </div>
+      )}
+
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          Simple, Transparent Pricing
+        <h1 className="text-4xl font-bold tracking-tight text-stone-900">
+          Texas Liquor License Data Lists
         </h1>
-        <p className="text-xl text-gray-700">
-          Start free. Upgrade when you need contact info, revenue data, and
-          alerts.
+        <p className="mt-3 text-lg text-stone-500">
+          Download verified datasets as CSV. One-time purchase, instant
+          delivery.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-        {/* Free Tier */}
-        <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm">
-          <h2 className="text-xl font-bold text-gray-900 mb-1">Free</h2>
-          <p className="text-gray-600 mb-4">Browse & search</p>
-          <div className="mb-6">
-            <span className="text-4xl font-bold text-gray-900">$0</span>
-            <span className="text-gray-600">/mo</span>
-          </div>
-          <ul className="space-y-3 mb-8">
-            {FREE_FEATURES.map((f) => (
-              <li
-                key={f}
-                className="flex items-start gap-2 text-sm text-gray-800"
-              >
-                <svg
-                  className="w-5 h-5 text-green-600 shrink-0 mt-0.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-                {f}
-              </li>
-            ))}
-          </ul>
-          <div className="text-center">
-            <span className="inline-block px-6 py-2 border border-gray-300 text-gray-600 rounded-lg font-medium">
-              Current Plan
-            </span>
-          </div>
-        </div>
-
-        {/* Pro Tier */}
-        <div className="bg-white rounded-xl border-2 border-amber-500 p-8 relative shadow-md">
-          <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
-            Most Popular
-          </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-1">Pro</h2>
-          <p className="text-gray-600 mb-4">Full access</p>
-          <div className="mb-6">
-            <span className="text-4xl font-bold text-gray-900">$29</span>
-            <span className="text-gray-600">/mo</span>
-          </div>
-          <ul className="space-y-3 mb-8">
-            {PRO_FEATURES.map((f) => (
-              <li
-                key={f}
-                className="flex items-start gap-2 text-sm text-gray-800"
-              >
-                <svg
-                  className="w-5 h-5 text-amber-600 shrink-0 mt-0.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-                {f}
-              </li>
-            ))}
-          </ul>
-          <div className="text-center">
-            <button className="w-full px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg transition-colors">
-              Upgrade to Pro
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Data Lists */}
-      <div className="mt-16">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            One-Time Data Lists
-          </h2>
-          <p className="text-gray-700">
-            Need a specific dataset? Purchase and download instantly as CSV.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          {[
-            {
-              name: "All Active Bar Licenses",
-              desc: "Every active bar license in Texas with full details",
-              price: "$99",
-              records: "15,000+",
-            },
-            {
-              name: "New Applications This Month",
-              desc: "License applications filed in the last 30 days",
-              price: "$49",
-              records: "500+",
-            },
-            {
-              name: "Full State License Database",
-              desc: "Complete TABC license database with all fields",
-              price: "$499",
-              records: "120,000+",
-            },
-          ].map((list) => (
-            <div
-              key={list.name}
-              className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm"
-            >
-              <h3 className="font-bold text-gray-900 mb-1">{list.name}</h3>
-              <p className="text-sm text-gray-700 mb-3">{list.desc}</p>
-              <p className="text-xs text-gray-500 mb-4">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        {DATA_LISTS.map((list) => (
+          <div
+            key={list.name}
+            className={`relative flex flex-col rounded-xl border bg-white p-6 shadow-sm ${
+              list.popular
+                ? "border-2 border-amber-400 shadow-md"
+                : "border-stone-200/80"
+            }`}
+          >
+            {list.popular && (
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <span className="rounded-full bg-amber-500 px-4 py-1 text-xs font-semibold text-white">
+                  Most Popular
+                </span>
+              </div>
+            )}
+            <div>
+              <h2 className="text-lg font-bold text-stone-900">{list.name}</h2>
+              <p className="mt-1 text-sm text-stone-500">{list.desc}</p>
+              <p className="mt-1 text-xs text-stone-400">
                 {list.records} records
               </p>
-              <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold text-gray-900">
-                  {list.price}
-                </span>
-                <button className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium rounded-lg transition-colors">
-                  Buy CSV
-                </button>
-              </div>
             </div>
-          ))}
-        </div>
+
+            <div className="mt-5">
+              <span className="text-4xl font-bold text-stone-900">
+                {list.price}
+              </span>
+              <span className="ml-1 text-sm text-stone-400">one-time</span>
+            </div>
+
+            <ul className="mt-6 space-y-2.5 flex-1">
+              {list.features.map((f) => (
+                <li
+                  key={f}
+                  className="flex items-start gap-2.5 text-sm text-stone-600"
+                >
+                  <Check className="size-4 shrink-0 text-amber-600 mt-0.5" />
+                  {f}
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-6">
+              <CheckoutButton priceId={list.priceId} label={`Buy — ${list.price}`} fullWidth />
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* FAQ */}
+      <div className="mt-16 rounded-xl border border-stone-200/80 bg-stone-50/50 p-8 text-center">
+        <FileSpreadsheet className="size-8 text-amber-600 mx-auto mb-3" />
+        <h3 className="text-xl font-bold text-stone-900">
+          Need a custom dataset?
+        </h3>
+        <p className="mx-auto mt-2 max-w-md text-sm text-stone-500">
+          We can build custom data exports filtered by city, county, license
+          type, revenue range, and more.
+        </p>
+        <a
+          href="mailto:data@barbooktx.com"
+          className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl border border-stone-200 bg-white px-6 text-sm font-semibold text-stone-700 shadow-sm transition-colors hover:bg-stone-50"
+        >
+          Contact Us
+        </a>
+      </div>
+
       <div className="mt-16 max-w-2xl mx-auto">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+        <h2 className="text-2xl font-bold tracking-tight text-stone-900 mb-8 text-center">
           FAQ
         </h2>
         <div className="space-y-4">
-          {[
-            {
-              q: "Where does the data come from?",
-              a: "All data is sourced from the Texas Alcoholic Beverage Commission (TABC) and the Texas Comptroller's Mixed Beverage Gross Receipts reports. It's 100% verified public record data.",
-            },
-            {
-              q: "How often is the data updated?",
-              a: "Our data pipeline syncs with TABC daily. Revenue data is published monthly by the Texas Comptroller.",
-            },
-            {
-              q: "Can I cancel anytime?",
-              a: "Yes — Pro subscriptions can be cancelled anytime from your dashboard. No long-term contracts.",
-            },
-            {
-              q: "What format are the data lists?",
-              a: "All data lists are delivered as CSV files that open in Excel, Google Sheets, or any data tool.",
-            },
-          ].map((faq) => (
+          {FAQS.map((faq) => (
             <div
               key={faq.q}
-              className="bg-white rounded-lg border border-gray-200 p-5 shadow-sm"
+              className="rounded-xl border border-stone-200/80 bg-white p-6"
             >
-              <h3 className="font-semibold text-gray-900 mb-2">{faq.q}</h3>
-              <p className="text-sm text-gray-700">{faq.a}</p>
+              <h3 className="font-semibold text-sm text-stone-900">{faq.q}</h3>
+              <p className="text-sm text-stone-500 mt-2">{faq.a}</p>
             </div>
           ))}
         </div>

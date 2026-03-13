@@ -2,58 +2,15 @@ import {
   pgTable,
   text,
   integer,
-  boolean,
   timestamp,
-  jsonb,
   numeric,
   date,
   index,
-  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
-// ============ USERS & BILLING ============
-
-export const users = pgTable("users", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  email: text("email").notNull().unique(),
-  name: text("name"),
-  stripeCustomerId: text("stripe_customer_id").unique(),
-  subscriptionTier: text("subscription_tier").notNull().default("free"),
-  subscriptionId: text("subscription_id"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const savedSearches = pgTable("saved_searches", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  userId: text("user_id")
-    .notNull()
-    .references(() => users.id),
-  name: text("name").notNull(),
-  query: jsonb("query").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const alerts = pgTable("alerts", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  userId: text("user_id")
-    .notNull()
-    .references(() => users.id),
-  name: text("name").notNull(),
-  query: jsonb("query").notNull(),
-  frequency: text("frequency").notNull().default("daily"),
-  active: boolean("active").notNull().default(true),
-  lastSent: timestamp("last_sent"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+// ============ DATA LISTS (Stripe one-time purchases) ============
 
 export const dataLists = pgTable("data_lists", {
   id: text("id")
@@ -91,6 +48,10 @@ export const licenses = pgTable(
     phone: text("phone"),
     email: text("email"),
     ownerName: text("owner_name"),
+    mailAddress: text("mail_address"),
+    mailCity: text("mail_city"),
+    mailState: text("mail_state"),
+    mailZip: text("mail_zip"),
     latitude: numeric("latitude"),
     longitude: numeric("longitude"),
     slug: text("slug").notNull().unique(),
@@ -162,19 +123,6 @@ export const revenue = pgTable(
 
 // ============ RELATIONS ============
 
-export const usersRelations = relations(users, ({ many }) => ({
-  savedSearches: many(savedSearches),
-  alerts: many(alerts),
-}));
-
-export const savedSearchesRelations = relations(savedSearches, ({ one }) => ({
-  user: one(users, { fields: [savedSearches.userId], references: [users.id] }),
-}));
-
-export const alertsRelations = relations(alerts, ({ one }) => ({
-  user: one(users, { fields: [alerts.userId], references: [users.id] }),
-}));
-
 export const licensesRelations = relations(licenses, ({ many }) => ({
   violations: many(violations),
   revenue: many(revenue),
@@ -196,10 +144,7 @@ export const revenueRelations = relations(revenue, ({ one }) => ({
 
 // ============ ZOD SCHEMAS ============
 
-export const insertUserSchema = createInsertSchema(users);
-export const selectUserSchema = createSelectSchema(users);
 export const insertLicenseSchema = createInsertSchema(licenses);
 export const selectLicenseSchema = createSelectSchema(licenses);
-export const insertAlertSchema = createInsertSchema(alerts);
 export const insertViolationSchema = createInsertSchema(violations);
 export const insertRevenueSchema = createInsertSchema(revenue);
