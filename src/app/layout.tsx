@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { AdSenseScript } from "@/components/ads/AdSenseScript";
+import { AdBlockDetector } from "@/components/ads/AdBlockDetector";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -38,13 +39,16 @@ export default function RootLayout({
 }>): React.ReactElement {
   return (
     <html lang="en">
+      <head>
+        <AdSenseScript />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-stone-900 min-h-screen flex flex-col`}
       >
-        <AdSenseScript />
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
+        <AdBlockDetector />
       </body>
     </html>
   );
