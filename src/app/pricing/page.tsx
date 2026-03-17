@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: "Data Lists — BarBook Texas",
   description:
     "Download verified Texas liquor license datasets as CSV. Active bar licenses, new applications, full state database, and more.",
+  alternates: { canonical: "/pricing" },
 };
 
 interface PricingPageProps {

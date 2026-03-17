@@ -28,6 +28,7 @@ export async function generateMetadata({
   return {
     title: `Top Revenue Bars & Restaurants in ${cityName}, TX`,
     description: `See the highest-grossing bars, restaurants, and liquor establishments in ${cityName}, Texas based on verified TABC revenue data.`,
+    alternates: { canonical: `/top-revenue/${city}` },
   };
 }
 

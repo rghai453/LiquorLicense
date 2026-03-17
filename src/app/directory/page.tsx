@@ -32,6 +32,7 @@ export async function generateMetadata({
   return {
     title: parts.join(" — "),
     description: `Browse ${parts.join(" ")}. Search verified TABC license data with BarBook Texas.`,
+    alternates: { canonical: "/directory" },
   };
 }
 

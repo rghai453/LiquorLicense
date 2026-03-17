@@ -20,6 +20,7 @@ export async function generateMetadata({
   return {
     title: `Liquor Licenses in ${cityName}, TX`,
     description: `Browse all active liquor licenses in ${cityName}, Texas. View establishment details, revenue data, and TABC license info.`,
+    alternates: { canonical: `/cities/${city}` },
   };
 }
 

@@ -15,6 +15,7 @@ export async function generateMetadata({ params }: ZipPageProps): Promise<Metada
   return {
     title: `Liquor Licenses in ZIP ${zip} — Texas`,
     description: `Browse all TABC liquor licenses in ZIP code ${zip}, Texas. View establishment details and license data.`,
+    alternates: { canonical: `/zip/${zip}` },
   };
 }
 

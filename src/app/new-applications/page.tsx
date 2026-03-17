@@ -6,6 +6,7 @@ import { getNewApplications, getTotalLicenseCount } from "@/db/queries";
 export const metadata: Metadata = {
   title: "New License Applications — Texas Liquor Licenses",
   description: "View recently filed TABC liquor license applications in Texas. New bars, restaurants, and package stores opening soon.",
+  alternates: { canonical: "/new-applications" },
 };
 
 export const revalidate = 3600;

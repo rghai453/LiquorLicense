@@ -25,6 +25,7 @@ export async function generateMetadata({ params }: TypePageProps): Promise<Metad
   return {
     title: `${typeName} Licenses in Texas`,
     description: `Browse all ${typeName} liquor licenses in Texas. Verified TABC data with details and revenue reports.`,
+    alternates: { canonical: `/directory/${type}` },
   };
 }
 

@@ -18,6 +18,7 @@ export async function generateMetadata({
   return {
     title: `Liquor Licenses in ${countyName} County, TX`,
     description: `Browse all TABC liquor licenses in ${countyName} County, Texas. View establishment details, revenue data, and license details.`,
+    alternates: { canonical: `/counties/${county}` },
   };
 }
 

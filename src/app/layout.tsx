@@ -17,6 +17,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "https://barbooktx.com"
+  ),
   title: {
     default: "BarBook Texas — Texas Liquor License Intelligence",
     template: "%s | BarBook Texas",
@@ -29,6 +32,9 @@ export const metadata: Metadata = {
       "Search 60,000+ Texas liquor licenses with revenue data, violations, and analytics.",
     siteName: "BarBook Texas",
     type: "website",
+  },
+  alternates: {
+    canonical: "/",
   },
 };
 

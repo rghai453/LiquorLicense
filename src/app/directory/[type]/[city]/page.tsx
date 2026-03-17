@@ -24,6 +24,7 @@ export async function generateMetadata({ params }: TypeCityPageProps): Promise<M
   return {
     title: `${typeName} in ${cityName}, TX — Liquor Licenses`,
     description: `Browse ${typeName.toLowerCase()} liquor licenses in ${cityName}, Texas. Verified TABC data with details and revenue data.`,
+    alternates: { canonical: `/directory/${type}/${city}` },
   };
 }
 

@@ -7,6 +7,7 @@ import { AdSlot } from "@/components/ads/AdSlot";
 export const metadata: Metadata = {
   title: "Recent Violations & Suspensions — Texas Liquor Licenses",
   description: "View recent TABC violations, suspensions, and enforcement actions against Texas liquor license holders.",
+  alternates: { canonical: "/violations" },
 };
 
 export const revalidate = 3600;

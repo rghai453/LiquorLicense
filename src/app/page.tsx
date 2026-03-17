@@ -20,6 +20,7 @@ export const metadata: Metadata = {
   title: 'BarBook Texas — Texas Liquor License Intelligence',
   description:
     'Search verified Texas liquor licenses with revenue reports, violations, and analytics. Updated daily from TABC public records.',
+  alternates: { canonical: '/' },
   openGraph: {
     title: 'BarBook Texas — Texas Liquor License Intelligence',
     description:

@@ -20,6 +20,7 @@ export async function generateMetadata({
   return {
     title: `${displayName} — Texas Liquor License Holder`,
     description: `View ${total} liquor license${total !== 1 ? "s" : ""} held by ${displayName} in Texas. Verified TABC public records.`,
+    alternates: { canonical: `/owners/${slug}` },
   };
 }
 

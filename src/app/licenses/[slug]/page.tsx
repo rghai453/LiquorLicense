@@ -37,6 +37,7 @@ export async function generateMetadata({
   return {
     title: `${license.businessName} — ${license.licenseType} in ${license.city || "Texas"}`,
     description: `${license.businessName} is a verified ${license.licenseType} license holder in ${license.city || "Texas"}. License #${license.licenseNumber}. View details, revenue data, and violations from official TABC records.`,
+    alternates: { canonical: `/licenses/${slug}` },
     openGraph: {
       title: `${license.businessName} — ${license.licenseType}`,
       description: `Verified TABC license data for ${license.businessName} in ${license.city || "Texas"}.`,

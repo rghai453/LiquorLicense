@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   title: "Top Revenue Bars & Restaurants in Texas",
   description:
     "See the highest-grossing bars, restaurants, and liquor establishments in Texas based on verified TABC Mixed Beverage Gross Receipts data.",
+  alternates: { canonical: "/top-revenue" },
 };
 
 export const revalidate = 86400;
