@@ -1,6 +1,6 @@
 /** @type {import('next-sitemap').IConfig} */
 module.exports = {
-  siteUrl: process.env.NEXT_PUBLIC_APP_URL || "https://liquorscope.com",
+  siteUrl: process.env.NEXT_PUBLIC_APP_URL || "https://barbooktx.com",
   generateRobotsTxt: true,
   sitemapSize: 50000,
   changefreq: "daily",
