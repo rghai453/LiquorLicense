@@ -1,0 +1,41 @@
+# BarBook Texas
+
+> Texas liquor license intelligence platform. Search verified TABC license data, revenue reports, violations, and new applications.
+
+## About
+
+BarBook Texas aggregates and organizes public liquor license data from the Texas Alcoholic Beverage Commission (TABC) and the Texas Comptroller's Mixed Beverage Gross Receipts reports. The platform covers 80,000+ active licenses across 2,800+ cities and all 254 Texas counties.
+
+## Data Sources
+
+- Texas Alcoholic Beverage Commission (TABC) — license records, violations, enforcement actions
+- Texas Comptroller of Public Accounts — Mixed Beverage Gross Receipts (monthly revenue data)
+
+## Key Pages
+
+- [Homepage](https://barbooktx.com/) — Search and browse all Texas liquor licenses
+- [Directory](https://barbooktx.com/directory) — Searchable directory with filters by type, city, county, status
+- [Top Revenue](https://barbooktx.com/top-revenue) — Highest-grossing establishments by reported revenue
+- [Violations](https://barbooktx.com/violations) — Recent TABC enforcement actions and suspensions
+- [New Applications](https://barbooktx.com/new-applications) — Recently filed license applications
+- [Data Lists](https://barbooktx.com/pricing) — Downloadable CSV datasets for purchase
+- [About](https://barbooktx.com/about) — Data methodology and company information
+
+## City Pages
+
+Browse licenses by city: https://barbooktx.com/cities/{city-name}
+Examples: /cities/houston, /cities/dallas, /cities/austin, /cities/san%20antonio
+
+## License Detail Pages
+
+Individual license records: https://barbooktx.com/licenses/{slug}
+Each page includes: business name, address, license type, status, revenue history, violation records.
+
+## Data Update Frequency
+
+- License data: synced daily from TABC
+- Revenue data: updated monthly (published by Texas Comptroller)
+
+## Contact
+
+data@barbooktx.com

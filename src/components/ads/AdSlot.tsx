@@ -34,7 +34,7 @@ export function AdSlot({
   }, []);
 
   return (
-    <div className={className} style={{ minHeight: 90 }}>
+    <div className={className} style={{ minHeight: format === "rectangle" ? 250 : 100 }}>
       <ins
         ref={adRef}
         className="adsbygoogle"

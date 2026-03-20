@@ -12,7 +12,7 @@ const productLinks = [
 
 const legalLinks = [
   { href: '/about', label: 'About' },
-  { href: '/data', label: 'Data Lists' },
+  { href: '/pricing', label: 'Data Lists' },
   { href: '/privacy', label: 'Privacy' },
   { href: '/terms', label: 'Terms' },
 ] as const;

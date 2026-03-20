@@ -5,7 +5,7 @@ import { DownloadTrigger } from "@/components/billing/DownloadTrigger";
 import { stripe } from "@/lib/stripe";
 
 export const metadata: Metadata = {
-  title: "Data Lists — BarBook Texas",
+  title: "Texas Liquor License Data Lists — CSV Downloads",
   description:
     "Download verified Texas liquor license datasets as CSV. Active bar licenses, new applications, full state database, and more.",
   alternates: { canonical: "/pricing" },
@@ -218,6 +218,24 @@ export default async function PricingPage({
           ))}
         </div>
       </div>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: FAQS.map((faq) => ({
+              "@type": "Question",
+              name: faq.q,
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: faq.a,
+              },
+            })),
+          }),
+        }}
+      />
     </div>
   );
 }

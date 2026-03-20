@@ -157,6 +157,17 @@ export default async function LicensePage({
               <h1 className="text-2xl font-bold tracking-tight">
                 {license.businessName}
               </h1>
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-xl">
+                {license.businessName} holds a {license.licenseType} license
+                (#{license.licenseNumber}) in {license.city || "Texas"}
+                {license.county ? `, ${license.county} County` : ""}.
+                {license.status.toLowerCase() === "active"
+                  ? " This license is currently active"
+                  : ` This license is currently ${license.status.toLowerCase()}`}
+                {license.issueDate ? `, issued ${license.issueDate}` : ""}
+                {license.expirationDate ? ` with an expiration date of ${license.expirationDate}` : ""}
+                . Data sourced from TABC public records.
+              </p>
               {license.dba && license.dba !== license.businessName && (
                 <p className="text-muted-foreground">DBA: {license.dba}</p>
               )}
@@ -326,26 +337,67 @@ export default async function LicensePage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "LocalBusiness",
-            name: license.businessName,
-            address: {
-              "@type": "PostalAddress",
-              streetAddress: license.address,
-              addressLocality: license.city,
-              addressRegion: license.state,
-              postalCode: license.zip,
+          __html: JSON.stringify([
+            {
+              "@context": "https://schema.org",
+              "@type": "LocalBusiness",
+              name: license.businessName,
+              address: {
+                "@type": "PostalAddress",
+                streetAddress: license.address,
+                addressLocality: license.city,
+                addressRegion: license.state,
+                postalCode: license.zip,
+              },
+              ...(license.latitude &&
+                license.longitude && {
+                  geo: {
+                    "@type": "GeoCoordinates",
+                    latitude: license.latitude,
+                    longitude: license.longitude,
+                  },
+                }),
             },
-            ...(license.latitude &&
-              license.longitude && {
-                geo: {
-                  "@type": "GeoCoordinates",
-                  latitude: license.latitude,
-                  longitude: license.longitude,
+            {
+              "@context": "https://schema.org",
+              "@type": "BreadcrumbList",
+              itemListElement: [
+                {
+                  "@type": "ListItem",
+                  position: 1,
+                  name: "Home",
+                  item: process.env.NEXT_PUBLIC_APP_URL || "https://barbooktx.com",
                 },
-              }),
-          }),
+                {
+                  "@type": "ListItem",
+                  position: 2,
+                  name: "Directory",
+                  item: `${process.env.NEXT_PUBLIC_APP_URL || "https://barbooktx.com"}/directory`,
+                },
+                ...(license.city
+                  ? [
+                      {
+                        "@type": "ListItem",
+                        position: 3,
+                        name: license.city,
+                        item: `${process.env.NEXT_PUBLIC_APP_URL || "https://barbooktx.com"}/cities/${encodeURIComponent(license.city.toLowerCase())}`,
+                      },
+                      {
+                        "@type": "ListItem",
+                        position: 4,
+                        name: license.businessName,
+                      },
+                    ]
+                  : [
+                      {
+                        "@type": "ListItem",
+                        position: 3,
+                        name: license.businessName,
+                      },
+                    ]),
+              ],
+            },
+          ]),
         }}
       />
     </div>

@@ -72,6 +72,12 @@ export default async function HomePage(): Promise<React.ReactElement> {
               </span>
             </h1>
 
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-stone-300">
+              Search {stats.totalLicenses.toLocaleString()} verified TABC licenses
+              across {stats.totalCities.toLocaleString()} Texas cities. Browse
+              revenue reports, violations, and new applications — all sourced from
+              official public records updated daily.
+            </p>
           </div>
 
           {/* Search */}
@@ -310,6 +316,35 @@ export default async function HomePage(): Promise<React.ReactElement> {
           </p>
         </div>
       </section>
+
+      {/* JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            name: 'BarBook Texas',
+            url: process.env.NEXT_PUBLIC_APP_URL || 'https://barbooktx.com',
+            description:
+              'Search verified Texas liquor licenses with revenue reports, violations, and analytics. Updated daily from TABC public records.',
+            potentialAction: {
+              '@type': 'SearchAction',
+              target: {
+                '@type': 'EntryPoint',
+                urlTemplate: `${process.env.NEXT_PUBLIC_APP_URL || 'https://barbooktx.com'}/directory?q={search_term_string}`,
+              },
+              'query-input': 'required name=search_term_string',
+            },
+            publisher: {
+              '@type': 'Organization',
+              name: 'BarBook Texas',
+              url: process.env.NEXT_PUBLIC_APP_URL || 'https://barbooktx.com',
+              email: 'data@barbooktx.com',
+            },
+          }),
+        }}
+      />
     </div>
   );
 }

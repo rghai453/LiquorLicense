@@ -11,8 +11,11 @@ export async function generateSitemaps(): Promise<Array<{ id: number }>> {
     const [result] = await db.select({ count: count() }).from(licenses);
     const total = Number(result?.count) || 0;
     const numSitemaps = Math.ceil(total / URLS_PER_SITEMAP);
-    return Array.from({ length: Math.max(numSitemaps, 1) }, (_, i) => ({ id: i }));
-  } catch {
+    return Array.from({ length: Math.max(numSitemaps, 1) }, (_, i) => ({
+      id: i,
+    }));
+  } catch (e) {
+    console.error("[sitemap:licenses] Failed to count licenses:", e);
     return [{ id: 0 }];
   }
 }
@@ -34,10 +37,9 @@ export default async function sitemap(props: {
     return batch.map((l) => ({
       url: `${BASE_URL}/licenses/${l.slug}`,
       lastModified: l.updatedAt ?? new Date(),
-      changeFrequency: "weekly" as const,
-      priority: 0.8,
     }));
-  } catch {
+  } catch (e) {
+    console.error("[sitemap:licenses] Failed to generate sitemap:", e);
     return [];
   }
 }

@@ -45,8 +45,12 @@ export default async function CityPage({
       <h1 className="text-3xl font-bold tracking-tight text-stone-900">
         Liquor Licenses in {cityName}, TX
       </h1>
-      <p className="mt-1 text-sm text-stone-500 mb-8">
-        {total.toLocaleString()} active licenses
+      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-stone-500 mb-8">
+        {cityName}, Texas has {total.toLocaleString()} active TABC liquor
+        licenses across {typeBreakdown.length} license types, according to data
+        from the Texas Alcoholic Beverage Commission. Browse establishments
+        below to view license details, revenue reports from the Texas
+        Comptroller, and any enforcement actions on record.
       </p>
 
       <div className="mb-8 grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-stone-200/80 ring-1 ring-stone-200 lg:grid-cols-2">
@@ -110,21 +114,46 @@ export default async function CityPage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "CollectionPage",
-            name: `Liquor Licenses in ${cityName}, TX`,
-            description: `Browse ${total} active liquor licenses in ${cityName}, Texas.`,
-            url: `${process.env.NEXT_PUBLIC_APP_URL || "https://barbooktx.com"}/cities/${encodeURIComponent(city)}`,
-            about: {
-              "@type": "City",
-              name: cityName,
-              containedInPlace: {
-                "@type": "State",
-                name: "Texas",
+          __html: JSON.stringify([
+            {
+              "@context": "https://schema.org",
+              "@type": "CollectionPage",
+              name: `Liquor Licenses in ${cityName}, TX`,
+              description: `Browse ${total} active liquor licenses in ${cityName}, Texas.`,
+              url: `${process.env.NEXT_PUBLIC_APP_URL || "https://barbooktx.com"}/cities/${encodeURIComponent(city)}`,
+              about: {
+                "@type": "City",
+                name: cityName,
+                containedInPlace: {
+                  "@type": "State",
+                  name: "Texas",
+                },
               },
             },
-          }),
+            {
+              "@context": "https://schema.org",
+              "@type": "BreadcrumbList",
+              itemListElement: [
+                {
+                  "@type": "ListItem",
+                  position: 1,
+                  name: "Home",
+                  item: process.env.NEXT_PUBLIC_APP_URL || "https://barbooktx.com",
+                },
+                {
+                  "@type": "ListItem",
+                  position: 2,
+                  name: "Directory",
+                  item: `${process.env.NEXT_PUBLIC_APP_URL || "https://barbooktx.com"}/directory`,
+                },
+                {
+                  "@type": "ListItem",
+                  position: 3,
+                  name: cityName,
+                },
+              ],
+            },
+          ]),
         }}
       />
     </div>
