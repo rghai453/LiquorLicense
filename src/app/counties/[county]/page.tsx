@@ -3,6 +3,9 @@ import type { Metadata } from "next";
 import { ChevronRight, ArrowUpRight } from "lucide-react";
 import { getLicensesByCounty } from "@/db/queries";
 import { AdSlot } from "@/components/ads/AdSlot";
+import { cityToSlug } from "@/lib/utils";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildCollectionPage, buildBreadcrumbList, BASE_URL } from "@/components/seo/schemas";
 
 export const revalidate = 86400;
 
@@ -30,6 +33,12 @@ export default async function CountyPage({
 
   const { results, total, cityBreakdown } = await getLicensesByCounty(countyName);
 
+  const top3Cities = cityBreakdown
+    .slice(0, 3)
+    .filter((c) => c.city)
+    .map((c) => `${c.city} (${c.count.toLocaleString()})`)
+    .join(", ");
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <nav className="mb-6 flex items-center gap-1.5 text-sm text-stone-400">
@@ -43,8 +52,16 @@ export default async function CountyPage({
       <h1 className="text-3xl font-bold tracking-tight text-stone-900">
         Liquor Licenses in {countyName} County, TX
       </h1>
-      <p className="mt-1 text-sm text-stone-500 mb-8">
-        {total.toLocaleString()} active licenses
+      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-stone-500 mb-8">
+        {countyName} County, Texas has {total.toLocaleString()} active liquor licenses
+        across {cityBreakdown.length} cities.
+        {top3Cities && ` The largest cities by license count include ${top3Cities}.`}
+        {" "}All data is sourced from TABC public records, updated daily. Texas counties
+        play a key role in alcohol regulation — some counties are &quot;wet&quot; (allowing
+        alcohol sales), while others are &quot;dry&quot; or &quot;moist&quot; with partial
+        restrictions. Use this page to explore the licensed alcohol establishments in{" "}
+        {countyName} County, view detailed license information, and access revenue data
+        where available.
       </p>
 
       <div className="mb-8 grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-stone-200/80 ring-1 ring-stone-200">
@@ -64,7 +81,7 @@ export default async function CountyPage({
           {cityBreakdown.map((c) => c.city && (
             <Link
               key={c.city}
-              href={`/cities/${encodeURIComponent(c.city.toLowerCase())}`}
+              href={`/cities/${cityToSlug(c.city)}`}
               className="group flex items-center justify-between rounded-xl border border-stone-200/80 bg-white px-4 py-3 transition-all hover:border-amber-300/60 hover:shadow-sm"
             >
               <span className="text-sm font-medium text-stone-700 group-hover:text-amber-700">{c.city}</span>
@@ -106,26 +123,23 @@ export default async function CountyPage({
         </div>
       )}
 
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "CollectionPage",
-            name: `Liquor Licenses in ${countyName} County, TX`,
-            description: `Browse ${total} active liquor licenses in ${countyName} County, Texas.`,
-            url: `${process.env.NEXT_PUBLIC_APP_URL || "https://barbooktx.com"}/counties/${encodeURIComponent(county)}`,
-            about: {
-              "@type": "AdministrativeArea",
-              name: `${countyName} County`,
-              containedInPlace: {
-                "@type": "State",
-                name: "Texas",
-              },
-            },
-          }),
-        }}
-      />
+      <JsonLd data={[
+        buildCollectionPage({
+          name: `Liquor Licenses in ${countyName} County, TX`,
+          description: `Browse ${total} active liquor licenses in ${countyName} County, Texas.`,
+          url: `${BASE_URL}/counties/${encodeURIComponent(county)}`,
+          about: {
+            "@type": "AdministrativeArea",
+            name: `${countyName} County`,
+            containedInPlace: { "@type": "State", name: "Texas" },
+          },
+        }),
+        buildBreadcrumbList([
+          { name: "Home", url: BASE_URL },
+          { name: "Directory", url: `${BASE_URL}/directory` },
+          { name: `${countyName} County` },
+        ]),
+      ]} />
     </div>
   );
 }

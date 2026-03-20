@@ -6,6 +6,8 @@ import {
   getTopRevenueEstablishments,
 } from "@/db/queries";
 import { AdSlot } from "@/components/ads/AdSlot";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildCollectionPage, buildBreadcrumbList, buildDataset, BASE_URL } from "@/components/seo/schemas";
 
 export const metadata: Metadata = {
   title: "Top Revenue Bars & Restaurants in Texas",
@@ -33,8 +35,13 @@ export default async function TopRevenuePage(): Promise<React.ReactElement> {
       <h1 className="text-3xl font-bold tracking-tight text-stone-900">
         Top Revenue Bars & Restaurants in Texas
       </h1>
-      <p className="mt-1 text-sm text-stone-500 mb-10">
-        Based on verified Mixed Beverage Gross Receipts from the Texas Comptroller
+      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-stone-500 mb-10">
+        Every Texas establishment with a Mixed Beverage permit is required to file monthly
+        gross receipts with the Texas Comptroller of Public Accounts. These reports break down
+        total alcohol sales by category: liquor, beer, wine, and cover charges. The data below
+        ranks cities and individual establishments by their cumulative reported revenue. Use
+        this data to identify the highest-performing markets and venues in Texas&apos;s hospitality
+        industry.
       </p>
 
       <section className="mb-14">
@@ -116,6 +123,25 @@ export default async function TopRevenuePage(): Promise<React.ReactElement> {
           Browse Data Lists
         </Link>
       </div>
+
+      <JsonLd data={[
+        buildCollectionPage({
+          name: "Top Revenue Bars & Restaurants in Texas",
+          description: "Highest-grossing bars, restaurants, and liquor establishments in Texas by Mixed Beverage Gross Receipts.",
+          url: `${BASE_URL}/top-revenue`,
+        }),
+        buildBreadcrumbList([
+          { name: "Home", url: BASE_URL },
+          { name: "Top Revenue" },
+        ]),
+        buildDataset({
+          name: "Texas Mixed Beverage Gross Receipts",
+          description: "Monthly revenue data for Texas establishments with Mixed Beverage permits, sourced from the Texas Comptroller.",
+          url: `${BASE_URL}/top-revenue`,
+          temporalCoverage: "2020/..",
+          spatialCoverage: "Texas, United States",
+        }),
+      ]} />
     </div>
   );
 }

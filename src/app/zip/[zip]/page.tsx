@@ -2,12 +2,16 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { ChevronRight, ArrowUpRight } from "lucide-react";
 import { getLicensesByZip } from "@/db/queries";
+import { Pagination } from "@/components/directory/Pagination";
 import { AdSlot } from "@/components/ads/AdSlot";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildCollectionPage, buildBreadcrumbList, BASE_URL } from "@/components/seo/schemas";
 
 export const revalidate = 86400;
 
 interface ZipPageProps {
   params: Promise<{ zip: string }>;
+  searchParams: Promise<{ page?: string }>;
 }
 
 export async function generateMetadata({ params }: ZipPageProps): Promise<Metadata> {
@@ -19,10 +23,19 @@ export async function generateMetadata({ params }: ZipPageProps): Promise<Metada
   };
 }
 
-export default async function ZipPage({ params }: ZipPageProps): Promise<React.ReactElement> {
-  const { zip } = await params;
+const PAGE_SIZE = 24;
 
-  const { results, total } = await getLicensesByZip(zip);
+export default async function ZipPage({ params, searchParams }: ZipPageProps): Promise<React.ReactElement> {
+  const { zip } = await params;
+  const sp = await searchParams;
+  const page = Math.max(1, parseInt(sp.page || "1", 10));
+  const offset = (page - 1) * PAGE_SIZE;
+
+  const { results, total } = await getLicensesByZip(zip, PAGE_SIZE, offset);
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+
+  const cities = [...new Set(results.map((r) => r.city).filter(Boolean))];
+  const counties = [...new Set(results.map((r) => r.county).filter(Boolean))];
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -37,8 +50,11 @@ export default async function ZipPage({ params }: ZipPageProps): Promise<React.R
       <h1 className="text-3xl font-bold tracking-tight text-stone-900">
         Liquor Licenses in ZIP {zip}
       </h1>
-      <p className="mt-1 text-sm text-stone-500 mb-8">
-        {total.toLocaleString()} active licenses
+      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-stone-500 mb-8">
+        ZIP code {zip} in Texas contains {total.toLocaleString()} active liquor licenses.
+        {cities.length > 0 && ` This area covers parts of ${cities.slice(0, 3).join(", ")}${cities.length > 3 ? ` and ${cities.length - 3} more cities` : ""}.`}
+        {counties.length > 0 && ` Located in ${counties.slice(0, 2).join(" and ")} ${counties.length === 1 ? "County" : "Counties"}.`}
+        {" "}Data is sourced from the Texas Alcoholic Beverage Commission, updated daily.
       </p>
 
       <AdSlot slot="zip-top" format="horizontal" className="mb-8" />
@@ -62,6 +78,28 @@ export default async function ZipPage({ params }: ZipPageProps): Promise<React.R
           </Link>
         ))}
       </div>
+
+      <div className="mt-10">
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          basePath={`/zip/${zip}`}
+          searchParams={{}}
+        />
+      </div>
+
+      <JsonLd data={[
+        buildCollectionPage({
+          name: `Liquor Licenses in ZIP ${zip}`,
+          description: `Browse ${total.toLocaleString()} active TABC liquor licenses in ZIP code ${zip}, Texas.`,
+          url: `${BASE_URL}/zip/${zip}`,
+        }),
+        buildBreadcrumbList([
+          { name: "Home", url: BASE_URL },
+          { name: "Directory", url: `${BASE_URL}/directory` },
+          { name: `ZIP ${zip}` },
+        ]),
+      ]} />
     </div>
   );
 }

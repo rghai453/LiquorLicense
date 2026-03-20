@@ -10,9 +10,10 @@ import {
   ArrowUpRight,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { buttonVariants } from '@/components/ui/button-variants';
-import { cn } from '@/lib/utils';
+import { cn, cityToSlug } from '@/lib/utils';
 import { getHomeStats, getTopCities, getRecentLicenses } from '@/db/queries';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { buildWebSite } from '@/components/seo/schemas';
 
 export const revalidate = 3600;
 
@@ -173,7 +174,7 @@ export default async function HomePage(): Promise<React.ReactElement> {
           {topCities.map((item, i) => (
             <Link
               key={item.city}
-              href={`/cities/${encodeURIComponent(item.city.toLowerCase())}`}
+              href={`/cities/${cityToSlug(item.city)}`}
               className="group"
             >
               <div
@@ -307,6 +308,49 @@ export default async function HomePage(): Promise<React.ReactElement> {
         </div>
       </section>
 
+      {/* Understanding Texas Liquor Licenses */}
+      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <h2 className="text-2xl font-bold tracking-tight text-stone-900">
+          Understanding Texas Liquor Licenses
+        </h2>
+        <div className="mt-6 max-w-3xl space-y-4 text-sm leading-relaxed text-stone-600">
+          <p>
+            The Texas Alcoholic Beverage Commission (TABC) is the state agency responsible for
+            regulating the manufacture, distribution, and sale of alcoholic beverages in Texas.
+            Every bar, restaurant, package store, and wholesale distributor that sells alcohol
+            in Texas must hold a valid TABC license. As of March 2026, there are{' '}
+            {stats.totalLicenses.toLocaleString()} active licenses across{' '}
+            {stats.totalCities.toLocaleString()} cities and {stats.totalCounties.toLocaleString()}{' '}
+            counties statewide.
+          </p>
+          <p>
+            TABC issues more than 75 distinct license and permit types, but the most commonly
+            held include Mixed Beverage (MB) permits for bars and restaurants that sell liquor
+            by the drink, Beer and Wine (BG/BQ) permits for retail establishments, and Package
+            Store (P) permits for off-premises liquor sales. Each license type carries different
+            privileges, restrictions, and renewal requirements set by the Texas Alcoholic
+            Beverage Code.
+          </p>
+          <p>
+            BarBook Texas aggregates this data from two official government sources: TABC
+            license records (updated daily) and the Texas Comptroller&apos;s Mixed Beverage Gross
+            Receipts reports (published monthly). The revenue data covers total alcohol sales,
+            broken down by liquor, beer, wine, and cover charge receipts for each reporting
+            establishment. This makes BarBook Texas a valuable resource for sales professionals
+            targeting the hospitality industry, real estate analysts evaluating commercial
+            markets, investors tracking revenue trends, and journalists covering the Texas
+            alcohol industry.
+          </p>
+          <p>
+            All data on BarBook Texas is sourced from publicly available government records.
+            We normalize, deduplicate, and cross-reference records across both data sources
+            using TABC license numbers as the primary key. The platform is updated daily to
+            reflect new applications, status changes, violations, and monthly revenue filings
+            as they become available.
+          </p>
+        </div>
+      </section>
+
       {/* Trust */}
       <section className="border-t border-stone-200/80 bg-stone-50/50">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -317,34 +361,7 @@ export default async function HomePage(): Promise<React.ReactElement> {
         </div>
       </section>
 
-      {/* JSON-LD */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'WebSite',
-            name: 'BarBook Texas',
-            url: process.env.NEXT_PUBLIC_APP_URL || 'https://barbooktx.com',
-            description:
-              'Search verified Texas liquor licenses with revenue reports, violations, and analytics. Updated daily from TABC public records.',
-            potentialAction: {
-              '@type': 'SearchAction',
-              target: {
-                '@type': 'EntryPoint',
-                urlTemplate: `${process.env.NEXT_PUBLIC_APP_URL || 'https://barbooktx.com'}/directory?q={search_term_string}`,
-              },
-              'query-input': 'required name=search_term_string',
-            },
-            publisher: {
-              '@type': 'Organization',
-              name: 'BarBook Texas',
-              url: process.env.NEXT_PUBLIC_APP_URL || 'https://barbooktx.com',
-              email: 'data@barbooktx.com',
-            },
-          }),
-        }}
-      />
+      <JsonLd data={buildWebSite()} />
     </div>
   );
 }

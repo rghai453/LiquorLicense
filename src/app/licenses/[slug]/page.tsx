@@ -19,6 +19,9 @@ import {
   getLicenseViolations,
 } from "@/db/queries";
 import { AdSlot } from "@/components/ads/AdSlot";
+import { cityToSlug } from "@/lib/utils";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildLocalBusiness, buildBreadcrumbList, BASE_URL } from "@/components/seo/schemas";
 
 export const revalidate = 86400;
 
@@ -87,7 +90,7 @@ export default async function LicensePage({
       label: "City",
       value: license.city ? (
         <Link
-          href={`/cities/${encodeURIComponent(license.city.toLowerCase())}`}
+          href={`/cities/${cityToSlug(license.city)}`}
           className="text-amber-600 hover:text-amber-700"
         >
           {license.city}
@@ -137,7 +140,7 @@ export default async function LicensePage({
           <>
             <ChevronRight className="size-3.5" />
             <Link
-              href={`/cities/${encodeURIComponent(license.city.toLowerCase())}`}
+              href={`/cities/${cityToSlug(license.city)}`}
               className="hover:text-amber-600"
             >
               {license.city}
@@ -334,72 +337,27 @@ export default async function LicensePage({
         </div>
       </div>
 
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify([
-            {
-              "@context": "https://schema.org",
-              "@type": "LocalBusiness",
-              name: license.businessName,
-              address: {
-                "@type": "PostalAddress",
-                streetAddress: license.address,
-                addressLocality: license.city,
-                addressRegion: license.state,
-                postalCode: license.zip,
-              },
-              ...(license.latitude &&
-                license.longitude && {
-                  geo: {
-                    "@type": "GeoCoordinates",
-                    latitude: license.latitude,
-                    longitude: license.longitude,
-                  },
-                }),
-            },
-            {
-              "@context": "https://schema.org",
-              "@type": "BreadcrumbList",
-              itemListElement: [
-                {
-                  "@type": "ListItem",
-                  position: 1,
-                  name: "Home",
-                  item: process.env.NEXT_PUBLIC_APP_URL || "https://barbooktx.com",
-                },
-                {
-                  "@type": "ListItem",
-                  position: 2,
-                  name: "Directory",
-                  item: `${process.env.NEXT_PUBLIC_APP_URL || "https://barbooktx.com"}/directory`,
-                },
-                ...(license.city
-                  ? [
-                      {
-                        "@type": "ListItem",
-                        position: 3,
-                        name: license.city,
-                        item: `${process.env.NEXT_PUBLIC_APP_URL || "https://barbooktx.com"}/cities/${encodeURIComponent(license.city.toLowerCase())}`,
-                      },
-                      {
-                        "@type": "ListItem",
-                        position: 4,
-                        name: license.businessName,
-                      },
-                    ]
-                  : [
-                      {
-                        "@type": "ListItem",
-                        position: 3,
-                        name: license.businessName,
-                      },
-                    ]),
-              ],
-            },
-          ]),
-        }}
-      />
+      <JsonLd data={[
+        buildLocalBusiness({
+          businessName: license.businessName,
+          address: license.address,
+          city: license.city,
+          state: license.state,
+          zip: license.zip,
+          phone: license.phone,
+          latitude: license.latitude,
+          longitude: license.longitude,
+          slug: license.slug,
+        }),
+        buildBreadcrumbList([
+          { name: "Home", url: BASE_URL },
+          { name: "Directory", url: `${BASE_URL}/directory` },
+          ...(license.city
+            ? [{ name: license.city, url: `${BASE_URL}/cities/${cityToSlug(license.city)}` }]
+            : []),
+          { name: license.businessName },
+        ]),
+      ]} />
     </div>
   );
 }

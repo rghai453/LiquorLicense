@@ -1,19 +1,41 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ChevronRight } from "lucide-react";
-import { getRecentViolations } from "@/db/queries";
+import { getViolations, getViolationTypes } from "@/db/queries";
+import { Pagination } from "@/components/directory/Pagination";
 import { AdSlot } from "@/components/ads/AdSlot";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildCollectionPage, buildBreadcrumbList, BASE_URL } from "@/components/seo/schemas";
 
-export const metadata: Metadata = {
-  title: "Recent Violations & Suspensions — Texas Liquor Licenses",
-  description: "View recent TABC violations, suspensions, and enforcement actions against Texas liquor license holders.",
-  alternates: { canonical: "/violations" },
-};
+interface ViolationsPageProps {
+  searchParams: Promise<{ page?: string; type?: string }>;
+}
+
+export async function generateMetadata({ searchParams }: ViolationsPageProps): Promise<Metadata> {
+  const params = await searchParams;
+  const page = parseInt(params.page || "1", 10);
+  return {
+    title: "Recent Violations & Suspensions — Texas Liquor Licenses",
+    description: "View recent TABC violations, suspensions, and enforcement actions against Texas liquor license holders.",
+    alternates: { canonical: page > 1 ? `/violations?page=${page}` : "/violations" },
+  };
+}
 
 export const revalidate = 3600;
 
-export default async function ViolationsPage(): Promise<React.ReactElement> {
-  const results = await getRecentViolations();
+const PAGE_SIZE = 24;
+
+export default async function ViolationsPage({ searchParams }: ViolationsPageProps): Promise<React.ReactElement> {
+  const params = await searchParams;
+  const page = Math.max(1, parseInt(params.page || "1", 10));
+  const offset = (page - 1) * PAGE_SIZE;
+
+  const [{ results, total }, violationTypes] = await Promise.all([
+    getViolations({ type: params.type }, PAGE_SIZE, offset),
+    getViolationTypes(),
+  ]);
+
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
@@ -26,9 +48,34 @@ export default async function ViolationsPage(): Promise<React.ReactElement> {
       <h1 className="text-3xl font-bold tracking-tight text-stone-900">
         Recent Violations & Suspensions
       </h1>
-      <p className="mt-1 text-sm text-stone-500 mb-6">
-        TABC enforcement actions against Texas liquor license holders
+      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-stone-500 mb-6">
+        The Texas Alcoholic Beverage Commission (TABC) investigates and enforces liquor law
+        violations across the state. Common violations include sales to minors, operating after
+        hours, and health code infractions. Dispositions range from warnings to license suspension
+        and cancellation. This page lists {total.toLocaleString()} enforcement actions from TABC
+        public records, updated as new data becomes available.
       </p>
+
+      {violationTypes.length > 0 && (
+        <form method="GET" action="/violations" className="mb-6 flex items-center gap-3">
+          <select
+            name="type"
+            defaultValue={params.type || ""}
+            className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700 shadow-sm"
+          >
+            <option value="">All violation types</option>
+            {violationTypes.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-stone-800"
+          >
+            Filter
+          </button>
+        </form>
+      )}
 
       {results.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-stone-200/80 bg-white py-20">
@@ -82,7 +129,29 @@ export default async function ViolationsPage(): Promise<React.ReactElement> {
           ))}
         </div>
       )}
+
+      <div className="mt-10">
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          basePath="/violations"
+          searchParams={params.type ? { type: params.type } : {}}
+        />
+      </div>
+
       <AdSlot slot="violations-bottom" format="horizontal" className="mt-10" />
+
+      <JsonLd data={[
+        buildCollectionPage({
+          name: "TABC Violations & Suspensions",
+          description: `Browse ${total.toLocaleString()} TABC enforcement actions against Texas liquor license holders.`,
+          url: `${BASE_URL}/violations`,
+        }),
+        buildBreadcrumbList([
+          { name: "Home", url: BASE_URL },
+          { name: "Violations" },
+        ]),
+      ]} />
     </div>
   );
 }

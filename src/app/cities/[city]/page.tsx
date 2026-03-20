@@ -1,10 +1,11 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ChevronRight, ArrowUpRight } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button-variants";
-import { cn } from "@/lib/utils";
 import { getLicensesByCity } from "@/db/queries";
 import { AdSlot } from "@/components/ads/AdSlot";
+import { slugToCity, cityToSlug } from "@/lib/utils";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildCollectionPage, buildBreadcrumbList, BASE_URL } from "@/components/seo/schemas";
 
 export const revalidate = 86400;
 
@@ -16,11 +17,11 @@ export async function generateMetadata({
   params,
 }: CityPageProps): Promise<Metadata> {
   const { city } = await params;
-  const cityName = decodeURIComponent(city).replace(/\b\w/g, (c) => c.toUpperCase());
+  const cityName = slugToCity(city).replace(/\b\w/g, (c) => c.toUpperCase());
   return {
     title: `Liquor Licenses in ${cityName}, TX`,
     description: `Browse all active liquor licenses in ${cityName}, Texas. View establishment details, revenue data, and TABC license info.`,
-    alternates: { canonical: `/cities/${city}` },
+    alternates: { canonical: `/cities/${cityToSlug(cityName)}` },
   };
 }
 
@@ -28,9 +29,14 @@ export default async function CityPage({
   params,
 }: CityPageProps): Promise<React.ReactElement> {
   const { city } = await params;
-  const cityName = decodeURIComponent(city).replace(/\b\w/g, (c) => c.toUpperCase());
+  const cityName = slugToCity(city).replace(/\b\w/g, (c) => c.toUpperCase());
 
   const { results, total, typeBreakdown } = await getLicensesByCity(cityName);
+
+  const top3Types = typeBreakdown
+    .slice(0, 3)
+    .map((t) => t.type)
+    .join(", ");
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -51,6 +57,12 @@ export default async function CityPage({
         from the Texas Alcoholic Beverage Commission. Browse establishments
         below to view license details, revenue reports from the Texas
         Comptroller, and any enforcement actions on record.
+        {top3Types && ` The most common license types in ${cityName} are ${top3Types}.`}
+        {" "}All data is sourced from official TABC public records and updated daily.
+        Whether you&apos;re researching the local hospitality market, prospecting
+        for B2B sales opportunities, or analyzing commercial real estate activity,
+        this page provides a complete overview of the licensed alcohol industry
+        in {cityName}.
       </p>
 
       <div className="mb-8 grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-stone-200/80 ring-1 ring-stone-200 lg:grid-cols-2">
@@ -111,51 +123,23 @@ export default async function CityPage({
         </div>
       )}
 
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify([
-            {
-              "@context": "https://schema.org",
-              "@type": "CollectionPage",
-              name: `Liquor Licenses in ${cityName}, TX`,
-              description: `Browse ${total} active liquor licenses in ${cityName}, Texas.`,
-              url: `${process.env.NEXT_PUBLIC_APP_URL || "https://barbooktx.com"}/cities/${encodeURIComponent(city)}`,
-              about: {
-                "@type": "City",
-                name: cityName,
-                containedInPlace: {
-                  "@type": "State",
-                  name: "Texas",
-                },
-              },
-            },
-            {
-              "@context": "https://schema.org",
-              "@type": "BreadcrumbList",
-              itemListElement: [
-                {
-                  "@type": "ListItem",
-                  position: 1,
-                  name: "Home",
-                  item: process.env.NEXT_PUBLIC_APP_URL || "https://barbooktx.com",
-                },
-                {
-                  "@type": "ListItem",
-                  position: 2,
-                  name: "Directory",
-                  item: `${process.env.NEXT_PUBLIC_APP_URL || "https://barbooktx.com"}/directory`,
-                },
-                {
-                  "@type": "ListItem",
-                  position: 3,
-                  name: cityName,
-                },
-              ],
-            },
-          ]),
-        }}
-      />
+      <JsonLd data={[
+        buildCollectionPage({
+          name: `Liquor Licenses in ${cityName}, TX`,
+          description: `Browse ${total} active liquor licenses in ${cityName}, Texas.`,
+          url: `${BASE_URL}/cities/${cityToSlug(cityName)}`,
+          about: {
+            "@type": "City",
+            name: cityName,
+            containedInPlace: { "@type": "State", name: "Texas" },
+          },
+        }),
+        buildBreadcrumbList([
+          { name: "Home", url: BASE_URL },
+          { name: "Directory", url: `${BASE_URL}/directory` },
+          { name: cityName },
+        ]),
+      ]} />
     </div>
   );
 }

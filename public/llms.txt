@@ -24,7 +24,7 @@ BarBook Texas aggregates and organizes public liquor license data from the Texas
 ## City Pages
 
 Browse licenses by city: https://barbooktx.com/cities/{city-name}
-Examples: /cities/houston, /cities/dallas, /cities/austin, /cities/san%20antonio
+Examples: /cities/houston, /cities/dallas, /cities/austin, /cities/san-antonio
 
 ## License Detail Pages
 

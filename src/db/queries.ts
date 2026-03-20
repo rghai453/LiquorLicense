@@ -12,7 +12,7 @@ import {
 } from "drizzle-orm";
 
 // Only show active licenses, with revenue data surfaced first
-const activeOnly = sql`LOWER(${licenses.status}) = 'active'`;
+const activeOnly = sql`LOWER(${licenses.status}) = 'active' AND (LOWER(${licenses.state}) = 'tx' OR ${licenses.state} IS NULL)`;
 const hasRevenueFirst = sql`CASE WHEN ${licenses.id} IN (SELECT DISTINCT license_id FROM revenue WHERE license_id IS NOT NULL) THEN 0 ELSE 1 END`;
 
 // ============ TYPES ============
@@ -73,7 +73,7 @@ export interface TopRevenueEstablishmentDetailed {
 // ============ HOME PAGE QUERIES ============
 
 export async function getHomeStats(): Promise<HomeStats> {
-  const activeFilter = sql`lower(${licenses.status}) = 'active'`;
+  const activeFilter = sql`lower(${licenses.status}) = 'active' AND (lower(${licenses.state}) = 'tx' OR ${licenses.state} IS NULL)`;
 
   const [licenseCount] = await db
     .select({ count: count() })
@@ -110,7 +110,7 @@ export async function getTopCities(limit = 12): Promise<CityCount[]> {
     })
     .from(licenses)
     .where(
-      sql`${licenses.city} is not null AND ${licenses.city} != '' AND lower(${licenses.status}) = 'active'`
+      sql`${licenses.city} is not null AND ${licenses.city} != '' AND lower(${licenses.status}) = 'active' AND (lower(${licenses.state}) = 'tx' OR ${licenses.state} IS NULL)`
     )
     .groupBy(licenses.city)
     .orderBy(desc(count()))
@@ -170,13 +170,13 @@ export async function getLicenseViolations(licenseId: string) {
 
 // ============ NEW APPLICATIONS QUERIES ============
 
-export async function getNewApplications(limit = 50) {
-  return db
-    .select()
-    .from(licenses)
-    .where(and(activeOnly, sql`${licenses.issueDate} is not null`))
-    .orderBy(desc(licenses.issueDate))
-    .limit(limit);
+export async function getNewApplications(pageSize = 24, offset = 0) {
+  const where = and(activeOnly, sql`${licenses.issueDate} is not null`);
+  const [results, [totalResult]] = await Promise.all([
+    db.select().from(licenses).where(where).orderBy(desc(licenses.issueDate)).limit(pageSize).offset(offset),
+    db.select({ count: count() }).from(licenses).where(where),
+  ]);
+  return { results, total: totalResult?.count ?? 0 };
 }
 
 export async function getTotalLicenseCount(): Promise<number> {
@@ -274,7 +274,7 @@ export async function getActiveBarsExport() {
 }
 
 export async function getFullDatabaseExport() {
-  return db.select().from(licenses).orderBy(desc(licenses.createdAt));
+  return db.select().from(licenses).where(sql`LOWER(${licenses.state}) = 'tx' OR ${licenses.state} IS NULL`).orderBy(desc(licenses.createdAt));
 }
 
 // ============ TYPE PAGE QUERIES ============
@@ -320,11 +320,11 @@ export async function getLicensesByTypeAndCity(
 
 // ============ ZIP PAGE QUERIES ============
 
-export async function getLicensesByZip(zip: string, limit = 50) {
+export async function getLicensesByZip(zip: string, pageSize = 24, offset = 0) {
   const where = and(activeOnly, eq(licenses.zip, zip));
 
   const [results, [totalResult]] = await Promise.all([
-    db.select().from(licenses).where(where).orderBy(hasRevenueFirst, desc(licenses.createdAt)).limit(limit),
+    db.select().from(licenses).where(where).orderBy(hasRevenueFirst, desc(licenses.createdAt)).limit(pageSize).offset(offset),
     db.select({ count: count() }).from(licenses).where(where),
   ]);
 
@@ -440,19 +440,44 @@ export async function getLicensesByOwner(ownerSlug: string) {
 
 // ============ VIOLATIONS QUERIES ============
 
-export async function getRecentViolations(limit = 50) {
-  return db
-    .select({
-      violation: violations,
-      license: {
-        businessName: licenses.businessName,
-        city: licenses.city,
-        slug: licenses.slug,
-      },
-    })
+export async function getViolations(
+  filters: { type?: string },
+  pageSize: number,
+  offset: number
+) {
+  const conditions: SQL[] = [];
+  if (filters.type) {
+    conditions.push(ilike(violations.violationType, `%${filters.type}%`));
+  }
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const [results, [totalResult]] = await Promise.all([
+    db
+      .select({
+        violation: violations,
+        license: {
+          businessName: licenses.businessName,
+          city: licenses.city,
+          slug: licenses.slug,
+        },
+      })
+      .from(violations)
+      .leftJoin(licenses, eq(violations.licenseId, licenses.id))
+      .where(where)
+      .orderBy(desc(violations.date))
+      .limit(pageSize)
+      .offset(offset),
+    db.select({ count: count() }).from(violations).where(where),
+  ]);
+  return { results, total: totalResult?.count ?? 0 };
+}
+
+export async function getViolationTypes(): Promise<string[]> {
+  const results = await db
+    .selectDistinct({ type: violations.violationType })
     .from(violations)
-    .leftJoin(licenses, eq(violations.licenseId, licenses.id))
-    .orderBy(desc(violations.date))
-    .limit(limit);
+    .where(sql`${violations.violationType} IS NOT NULL`)
+    .orderBy(violations.violationType);
+  return results.map((r) => r.type!).filter(Boolean);
 }
 

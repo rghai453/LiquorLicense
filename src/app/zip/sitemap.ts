@@ -14,7 +14,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         cnt: sql<number>`COUNT(*)`,
       })
       .from(licenses)
-      .where(sql`${licenses.zip} is not null AND ${licenses.zip} != ''`)
+      .where(sql`${licenses.zip} is not null AND ${licenses.zip} != '' AND (LOWER(${licenses.state}) = 'tx' OR ${licenses.state} IS NULL)`)
       .groupBy(licenses.zip)
       .having(sql`COUNT(*) >= 3`);
 

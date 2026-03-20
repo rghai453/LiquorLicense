@@ -3,6 +3,8 @@ import { Check, CheckCircle, FileSpreadsheet } from "lucide-react";
 import { CheckoutButton } from "@/components/billing/CheckoutButton";
 import { DownloadTrigger } from "@/components/billing/DownloadTrigger";
 import { stripe } from "@/lib/stripe";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildProduct, buildFAQPage, BASE_URL } from "@/components/seo/schemas";
 
 export const metadata: Metadata = {
   title: "Texas Liquor License Data Lists — CSV Downloads",
@@ -219,23 +221,27 @@ export default async function PricingPage({
         </div>
       </div>
 
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "FAQPage",
-            mainEntity: FAQS.map((faq) => ({
-              "@type": "Question",
-              name: faq.q,
-              acceptedAnswer: {
-                "@type": "Answer",
-                text: faq.a,
-              },
-            })),
-          }),
-        }}
-      />
+      <JsonLd data={[
+        buildProduct({
+          name: "New Applications This Month",
+          description: "Every new TABC license filed in the last 30 days as a CSV download.",
+          price: "49.00",
+          url: `${BASE_URL}/pricing`,
+        }),
+        buildProduct({
+          name: "All Active Bar Licenses",
+          description: "Every active bar and mixed beverage license in Texas as a CSV download.",
+          price: "99.00",
+          url: `${BASE_URL}/pricing`,
+        }),
+        buildProduct({
+          name: "Full State License Database",
+          description: "The complete Texas TABC license database with all license types as a CSV download.",
+          price: "499.00",
+          url: `${BASE_URL}/pricing`,
+        }),
+        buildFAQPage(FAQS.map((faq) => ({ question: faq.q, answer: faq.a }))),
+      ]} />
     </div>
   );
 }

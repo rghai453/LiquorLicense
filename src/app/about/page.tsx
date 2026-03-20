@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight, Database, Shield, Zap } from "lucide-react";
 import { getHomeStats } from "@/db/queries";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildDataset, buildBreadcrumbList, BASE_URL } from "@/components/seo/schemas";
 
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
-  title: "About BarBook Texas",
+  title: "About — Data Sources, Methodology & Mission",
   description:
     "BarBook Texas is a public data intelligence platform that aggregates and organizes Texas liquor license data from TABC and the Texas Comptroller. Learn about our data, methodology, and mission.",
   alternates: { canonical: "/about" },
@@ -150,27 +152,36 @@ export default async function AboutPage(): Promise<React.ReactElement> {
         </p>
       </div>
 
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "AboutPage",
-            name: "About BarBook Texas",
+      <JsonLd data={[
+        {
+          "@context": "https://schema.org",
+          "@type": "AboutPage",
+          name: "About BarBook Texas",
+          description:
+            "BarBook Texas aggregates and organizes Texas liquor license data from TABC and the Texas Comptroller.",
+          url: `${BASE_URL}/about`,
+          mainEntity: {
+            "@type": "Organization",
+            name: "BarBook Texas",
+            url: BASE_URL,
+            email: "data@barbooktx.com",
             description:
-              "BarBook Texas aggregates and organizes Texas liquor license data from TABC and the Texas Comptroller.",
-            url: `${process.env.NEXT_PUBLIC_APP_URL || "https://barbooktx.com"}/about`,
-            mainEntity: {
-              "@type": "Organization",
-              name: "BarBook Texas",
-              url: process.env.NEXT_PUBLIC_APP_URL || "https://barbooktx.com",
-              email: "data@barbooktx.com",
-              description:
-                "Texas liquor license intelligence platform providing searchable TABC data, revenue reports, and violations.",
-            },
-          }),
-        }}
-      />
+              "Texas liquor license intelligence platform providing searchable TABC data, revenue reports, and violations.",
+          },
+        },
+        buildDataset({
+          name: "Texas Liquor License Database",
+          description: "Comprehensive database of Texas TABC liquor licenses including business details, license types, revenue data, and violations.",
+          url: BASE_URL,
+          distribution: { encodingFormat: "text/csv", contentUrl: `${BASE_URL}/pricing` },
+          temporalCoverage: "2020/..",
+          spatialCoverage: "Texas, United States",
+        }),
+        buildBreadcrumbList([
+          { name: "Home", url: BASE_URL },
+          { name: "About" },
+        ]),
+      ]} />
     </div>
   );
 }

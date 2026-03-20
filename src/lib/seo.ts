@@ -25,6 +25,7 @@ export function generateLicenseMeta(license: LicenseMetaInput): Metadata {
       description,
       siteName: BRAND,
     },
+    twitter: { card: "summary_large_image" },
   };
 }
 
@@ -36,6 +37,7 @@ export function generateCityMeta(city: string, count: number): Metadata {
     title,
     description,
     openGraph: { title, description, siteName: BRAND },
+    twitter: { card: "summary_large_image" },
   };
 }
 
@@ -47,6 +49,7 @@ export function generateCountyMeta(county: string, count: number): Metadata {
     title,
     description,
     openGraph: { title, description, siteName: BRAND },
+    twitter: { card: "summary_large_image" },
   };
 }
 
@@ -58,6 +61,7 @@ export function generateZipMeta(zip: string, count: number): Metadata {
     title,
     description,
     openGraph: { title, description, siteName: BRAND },
+    twitter: { card: "summary_large_image" },
   };
 }
 
@@ -80,5 +84,6 @@ export function generateDirectoryMeta(
     title,
     description,
     openGraph: { title, description, siteName: BRAND },
+    twitter: { card: "summary_large_image" },
   };
 }

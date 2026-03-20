@@ -6,6 +6,8 @@ import { DirectoryFilters } from "@/components/directory/DirectoryFilters";
 import { FileX2, ArrowUpRight } from "lucide-react";
 import { getDirectoryResults } from "@/db/queries";
 import { AdSlot } from "@/components/ads/AdSlot";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { buildCollectionPage, buildBreadcrumbList, BASE_URL } from "@/components/seo/schemas";
 
 export const revalidate = 3600;
 
@@ -74,8 +76,12 @@ export default async function DirectoryPage({
         <h1 className="text-3xl font-bold tracking-tight text-stone-900">
           Texas Liquor License Directory
         </h1>
-        <p className="mt-1 text-sm text-stone-500">
-          {total.toLocaleString()} active licenses
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-stone-500">
+          The BarBook Texas directory contains {total.toLocaleString()} active TABC liquor
+          licenses, searchable by business name, city, county, license type, and status. All
+          license data is sourced from the Texas Alcoholic Beverage Commission and verified
+          daily. Use the filters below to narrow results by location or license category, or
+          search by business name to find a specific establishment.
         </p>
       </div>
 
@@ -189,6 +195,17 @@ export default async function DirectoryPage({
           )}
         </>
       )}
+      <JsonLd data={[
+        buildCollectionPage({
+          name: "Texas Liquor License Directory",
+          description: `Browse ${total.toLocaleString()} active TABC liquor licenses in Texas.`,
+          url: `${BASE_URL}/directory`,
+        }),
+        buildBreadcrumbList([
+          { name: "Home", url: BASE_URL },
+          { name: "Directory" },
+        ]),
+      ]} />
     </div>
   );
 }

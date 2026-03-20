@@ -14,14 +14,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         cnt: sql<number>`COUNT(*)`,
       })
       .from(licenses)
-      .where(sql`${licenses.city} is not null AND ${licenses.city} != ''`)
+      .where(sql`${licenses.city} is not null AND ${licenses.city} != '' AND (LOWER(${licenses.state}) = 'tx' OR ${licenses.state} IS NULL)`)
       .groupBy(licenses.city)
       .having(sql`COUNT(*) >= 3`);
 
     return cities
       .filter((c) => c.city)
       .map((c) => ({
-        url: `${BASE_URL}/cities/${encodeURIComponent(c.city!.toLowerCase())}`,
+        url: `${BASE_URL}/cities/${c.city!.toLowerCase().replace(/\s+/g, '-')}`,
         lastModified: c.lastUpdated ?? new Date(),
       }));
   } catch (e) {
