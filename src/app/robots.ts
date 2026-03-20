@@ -9,6 +9,12 @@ export default function robots() {
         disallow: ['/api/'],
       },
     ],
-    sitemap: `${baseUrl}/sitemap.xml`,
+    sitemap: [
+      `${baseUrl}/sitemap.xml`,
+      `${baseUrl}/licenses/sitemap.xml`,
+      `${baseUrl}/cities/sitemap.xml`,
+      `${baseUrl}/counties/sitemap.xml`,
+      `${baseUrl}/zip/sitemap.xml`,
+    ],
   };
 }

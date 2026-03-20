@@ -1,0 +1,43 @@
+import { db } from "@/db";
+import { licenses } from "@/db/schema";
+import { count } from "drizzle-orm";
+import type { MetadataRoute } from "next";
+
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://barbooktx.com";
+const URLS_PER_SITEMAP = 50000;
+
+export async function generateSitemaps(): Promise<Array<{ id: number }>> {
+  try {
+    const [result] = await db.select({ count: count() }).from(licenses);
+    const total = Number(result?.count) || 0;
+    const numSitemaps = Math.ceil(total / URLS_PER_SITEMAP);
+    return Array.from({ length: Math.max(numSitemaps, 1) }, (_, i) => ({ id: i }));
+  } catch {
+    return [{ id: 0 }];
+  }
+}
+
+export default async function sitemap(props: {
+  id: Promise<string>;
+}): Promise<MetadataRoute.Sitemap> {
+  const id = Number(await props.id);
+  const offset = id * URLS_PER_SITEMAP;
+
+  try {
+    const batch = await db
+      .select({ slug: licenses.slug, updatedAt: licenses.updatedAt })
+      .from(licenses)
+      .orderBy(licenses.slug)
+      .limit(URLS_PER_SITEMAP)
+      .offset(offset);
+
+    return batch.map((l) => ({
+      url: `${BASE_URL}/licenses/${l.slug}`,
+      lastModified: l.updatedAt ?? new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    }));
+  } catch {
+    return [];
+  }
+}
