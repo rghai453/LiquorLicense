@@ -22,7 +22,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .filter((z) => z.zip)
       .map((z) => ({
         url: `${BASE_URL}/zip/${z.zip}`,
-        lastModified: z.lastUpdated ?? new Date(),
+        lastModified: z.lastUpdated ? new Date(z.lastUpdated) : new Date(),
       }));
   } catch (e) {
     console.error("[sitemap:zip] Failed to generate sitemap:", e);

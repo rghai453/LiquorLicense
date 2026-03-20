@@ -22,7 +22,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .filter((c) => c.city)
       .map((c) => ({
         url: `${BASE_URL}/cities/${c.city!.toLowerCase().replace(/\s+/g, '-')}`,
-        lastModified: c.lastUpdated ?? new Date(),
+        lastModified: c.lastUpdated ? new Date(c.lastUpdated) : new Date(),
       }));
   } catch (e) {
     console.error("[sitemap:cities] Failed to generate sitemap:", e);

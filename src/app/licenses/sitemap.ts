@@ -39,7 +39,7 @@ export default async function sitemap(props: {
 
     return batch.map((l) => ({
       url: `${BASE_URL}/licenses/${l.slug}`,
-      lastModified: l.updatedAt ?? new Date(),
+      lastModified: l.updatedAt ? new Date(l.updatedAt) : new Date(),
     }));
   } catch (e) {
     console.error("[sitemap:licenses] Failed to generate sitemap:", e);
