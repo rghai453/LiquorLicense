@@ -7,29 +7,45 @@ const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://barbooktx.com";
 const URLS_PER_SITEMAP = 10000;
 
 export async function generateSitemaps(): Promise<Array<{ id: number }>> {
-  const [[licenseCount], [cityCount], [countyCount], [zipCount]] = await Promise.all([
-    db.select({ count: count() }).from(licenses),
-    db.select({ count: sql<number>`count(distinct ${licenses.city})` }).from(licenses)
-      .where(sql`${licenses.city} is not null AND ${licenses.city} != ''`),
-    db.select({ count: sql<number>`count(distinct ${licenses.county})` }).from(licenses)
-      .where(sql`${licenses.county} is not null AND ${licenses.county} != ''`),
-    db.select({ count: sql<number>`count(distinct ${licenses.zip})` }).from(licenses)
-      .where(sql`${licenses.zip} is not null AND ${licenses.zip} != ''`),
-  ]);
+  try {
+    const [[licenseCount], [cityCount], [countyCount], [zipCount]] = await Promise.all([
+      db.select({ count: count() }).from(licenses),
+      db.select({ count: sql<number>`count(distinct ${licenses.city})` }).from(licenses)
+        .where(sql`${licenses.city} is not null AND ${licenses.city} != ''`),
+      db.select({ count: sql<number>`count(distinct ${licenses.county})` }).from(licenses)
+        .where(sql`${licenses.county} is not null AND ${licenses.county} != ''`),
+      db.select({ count: sql<number>`count(distinct ${licenses.zip})` }).from(licenses)
+        .where(sql`${licenses.zip} is not null AND ${licenses.zip} != ''`),
+    ]);
 
-  const totalUrls =
-    6 + // static pages
-    (licenseCount?.count ?? 0) +
-    (cityCount?.count ?? 0) +
-    (countyCount?.count ?? 0) +
-    (zipCount?.count ?? 0);
+    const totalUrls =
+      6 + // static pages
+      (licenseCount?.count ?? 0) +
+      (cityCount?.count ?? 0) +
+      (countyCount?.count ?? 0) +
+      (zipCount?.count ?? 0);
 
-  const numSitemaps = Math.ceil(totalUrls / URLS_PER_SITEMAP);
+    const numSitemaps = Math.ceil(totalUrls / URLS_PER_SITEMAP);
 
-  return Array.from({ length: Math.max(numSitemaps, 1) }, (_, i) => ({ id: i }));
+    return Array.from({ length: Math.max(numSitemaps, 1) }, (_, i) => ({ id: i }));
+  } catch {
+    // DB unavailable during build — return single sitemap; will resolve at runtime
+    return [{ id: 0 }];
+  }
 }
 
 export default async function sitemap({ id }: { id: number }): Promise<MetadataRoute.Sitemap> {
+  try {
+    return await generateSitemapEntries(id);
+  } catch {
+    // DB unavailable during build — return static pages only
+    return [
+      { url: BASE_URL, lastModified: new Date(), changeFrequency: "daily", priority: 1.0 },
+    ];
+  }
+}
+
+async function generateSitemapEntries(id: number): Promise<MetadataRoute.Sitemap> {
   const offset = id * URLS_PER_SITEMAP;
 
   // Build all URLs in order: static, licenses, cities, counties, zips
